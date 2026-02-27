@@ -19,8 +19,8 @@ This document is the final written submission for the certification challenge.
 - [ ] Written document addresses all deliverables
 - [ ] All relevant code in repo
 - [ ] Local setup docs present:
-  - `AI_ENGINEERING_PROJECT_REQUIREMENTS.md`
-  - `AI_ENGINEERING_LOCAL_SETUP.md`
+  - `docs/AI_ENGINEERING_PROJECT_REQUIREMENTS.md`
+  - `docs/AI_ENGINEERING_LOCAL_SETUP.md`
 
 ### Evaluation Evidence (Required)
 
@@ -47,7 +47,7 @@ Finding community events that match personal values and safety criteria requires
 
 The target user for this application includes parents, individuals in recovery, people seeking secular/apolitical spaces, and newcomers to a city. Existing event platforms optimize for volume and engagement, not values alignment. In practice, users must open 20-30 listings, read fine print, cross-check venue details, and infer context that is often not explicit in metadata. A listing labeled "community networking" may be bar-centered, a "free gathering" may be religiously affiliated, and a "family event" may include political sponsorships. This creates high time cost, repeated mismatch, and decision fatigue that reduces follow-through.
 
-For newcomers, the problem is worse because they lack local context about venues and organizers. They cannot easily tell which spaces are genuinely family-friendly, secular, or safe without additional investigation. Attending a mismatched event has high social cost and can increase isolation rather than reduce it. SafeSpace Events addresses this by combining broad public search with values-based AI filtering and contextual venue retrieval, so users can find a short list of high-fit events quickly and with confidence.
+For newcomers, the problem is worse because they lack local context about venues and organizers. They cannot easily tell which spaces are genuinely family-friendly, secular, or safe without additional investigation. Attending a mismatched event has high social cost and can increase isolation rather than reduce it. AI Powered Event Sourcer addresses this by combining broad public search with values-based AI filtering and contextual venue retrieval, so users can find a short list of high-fit events quickly and with confidence.
 
 ### 1.3 Evaluation Questions / Input-Output Pairs (2 pts)
 
@@ -72,7 +72,7 @@ For newcomers, the problem is worse because they lack local context about venues
 
 ### 2.1 Solution Description (1-2 paragraphs) (6 pts)
 
-SafeSpace Events is an agentic event discovery application that accepts a city plus values-based constraints (for example: free, alcohol-free, secular, apolitical, family-friendly). The UX is a focused search interface that returns categorized event recommendations in 30-60 seconds, where each event includes source, date/time, confidence score, and a brief explanation of why it matches user criteria. The system is designed to feel like a trusted local researcher that pre-vets options instead of forcing users to manually inspect many low-signal listings.
+AI Powered Event Sourcer is an agentic event discovery application that accepts a city plus values-based constraints (for example: free, alcohol-free, secular, apolitical, family-friendly). The UX is a focused search interface that returns categorized event recommendations in 30-60 seconds, where each event includes source, date/time, confidence score, and a brief explanation of why it matches user criteria. The system is designed to feel like a trusted local researcher that pre-vets options instead of forcing users to manually inspect many low-signal listings.
 
 The backend uses a supervisor-researcher pattern: a supervisor agent decomposes the request into parallel research tasks, researcher agents gather candidate events via Tavily, a filter agent applies values-based reasoning with RAG context, and a categorization agent organizes final outputs. The application is implemented in TypeScript using LangGraph.js and LangChain.js, with OpenAI + Anthropic model roles split by cost/reasoning profile. It includes in-thread memory for conversational refinement and cross-thread memory for saved preferences.
 

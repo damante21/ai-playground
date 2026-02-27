@@ -1,0 +1,327 @@
+[
+  {
+    "category": "alcohol",
+    "title": "Hotel venues and alcohol",
+    "content": "Hotels almost universally have bars, lounges, or in-house restaurants that serve alcohol. Even when an event at a hotel is not alcohol-centric, the venue environment includes alcohol availability. Events at hotel ballrooms, conference rooms, or rooftop spaces should be flagged as potentially alcohol-adjacent unless explicitly stated otherwise."
+  },
+  {
+    "category": "alcohol",
+    "title": "Brewery, winery, and distillery events",
+    "content": "Any event hosted at a brewery, winery, distillery, or taproom is inherently alcohol-centric regardless of the event description. Even yoga classes, art shows, or charity events at these venues center the alcohol-producing business. These should always fail an alcohol-free filter."
+  },
+  {
+    "category": "alcohol",
+    "title": "Refreshments and reception language",
+    "content": "Event descriptions that mention 'refreshments provided,' 'light refreshments,' or 'reception to follow' frequently include wine, beer, or cocktails. In professional and cultural event contexts, 'reception' almost always implies alcohol service. The word 'mixer' in a social context typically means a cocktail-focused gathering."
+  },
+  {
+    "category": "alcohol",
+    "title": "Happy hour and networking events",
+    "content": "Events described as 'happy hour,' 'after-work drinks,' 'networking mixer,' or 'social hour' are alcohol-centric by design. Even when food is mentioned alongside, the primary activity is drinking. These consistently fail alcohol-free criteria."
+  },
+  {
+    "category": "alcohol",
+    "title": "Food festival alcohol patterns",
+    "content": "Food festivals, tasting events, and culinary experiences frequently include wine pairings, craft beer tents, or cocktail stations. Look for language like 'food and drink,' 'taste of [city],' or 'culinary experience' as indicators. Farmers markets are generally safe, but evening food events often include alcohol."
+  },
+  {
+    "category": "alcohol",
+    "title": "Restaurant-hosted community events",
+    "content": "Events hosted at restaurants or bars, even when described as community gatherings, book clubs, or trivia nights, take place in environments where alcohol is the primary revenue driver. The social pressure to order drinks is inherent to these venues."
+  },
+  {
+    "category": "alcohol",
+    "title": "Gallery openings and art walks",
+    "content": "Art gallery openings, first Friday art walks, and museum after-hours events typically serve wine or cocktails as part of the experience. Daytime museum visits and art classes are usually safe, but evening art events should be scrutinized for alcohol presence."
+  },
+  {
+    "category": "alcohol",
+    "title": "Fundraiser galas and charity events",
+    "content": "Charity galas, fundraiser dinners, and benefit events almost always include alcohol service, open bars, or wine auctions. Even when the cause is wholesome, the event format centers alcohol consumption. Silent auctions and formal dinners at venues with liquor licenses are reliable indicators."
+  },
+  {
+    "category": "alcohol",
+    "title": "Concert and music venue events",
+    "content": "Live music at bars, clubs, or concert venues inherently involves alcohol sales as the primary business model. Outdoor music festivals also typically have beer gardens or drink vendors. Exceptions include daytime community concerts in parks or family-oriented music events at libraries or schools."
+  },
+  {
+    "category": "alcohol",
+    "title": "BYOB and potluck signals",
+    "content": "Events that say 'BYOB' (bring your own bottle/beverage) explicitly invite alcohol. Potluck events may or may not include alcohol depending on the group, but the lack of control over what attendees bring means they cannot be guaranteed alcohol-free."
+  },
+  {
+    "category": "alcohol",
+    "title": "Rooftop and patio events",
+    "content": "Rooftop events, patio parties, and terrace gatherings at commercial venues are frequently cocktail-oriented social events. The venue type combined with evening timing strongly suggests alcohol presence. Rooftop yoga or morning events at hotels may be exceptions."
+  },
+  {
+    "category": "alcohol",
+    "title": "Sports viewing and watch parties",
+    "content": "Sports watch parties and game day events at bars, restaurants, or breweries are alcohol-centric by nature. Even community-organized watch parties often involve beer and wings culture. Only watch parties at community centers, churches, or private homes have a chance of being alcohol-free."
+  },
+  {
+    "category": "alcohol",
+    "title": "Safe alcohol-free venue types",
+    "content": "Libraries, public parks, community centers, schools, recreation centers, YMCAs, and most museums during regular hours are reliably alcohol-free venues. Coffee shops, juice bars, and tea houses are also typically safe. These venues have policies or norms that exclude alcohol."
+  },
+  {
+    "category": "alcohol",
+    "title": "Sober and sober-curious events",
+    "content": "Events explicitly labeled 'sober,' 'sober-curious,' 'alcohol-free,' or 'mocktail' are designed for people avoiding alcohol. These are reliable passes for alcohol-free filters. Organizations like Sober in the City, Sans Bar, or similar indicate intentional alcohol-free spaces."
+  },
+  {
+    "category": "alcohol",
+    "title": "Wine and paint events",
+    "content": "Sip-and-paint, wine-and-canvas, or paint night events at studios or bars center alcohol as part of the activity. Even when described as art classes, the 'sip' or 'wine' component is integral. Paint classes at community centers without the drinking component are different events entirely."
+  },
+  {
+    "category": "religious",
+    "title": "Church-hosted community events",
+    "content": "Churches, temples, mosques, and synagogues frequently host events described as 'community gatherings,' 'neighborhood cookouts,' 'family fun days,' or 'free meals.' While genuinely open to all, these events serve as outreach and often include prayer, religious messaging, or invitations to services. The venue alone (a house of worship) makes these religious events."
+  },
+  {
+    "category": "religious",
+    "title": "Faith-based organization identifiers",
+    "content": "Organizations with names containing 'Faith,' 'Grace,' 'Blessed,' 'Ministry,' 'Fellowship,' 'Salvation,' 'Gospel,' 'Christ,' 'Church of,' or denominational names (Baptist, Methodist, Catholic, LDS, etc.) are religious. Their events, even secular-sounding ones like food drives or clothing swaps, are extensions of religious mission."
+  },
+  {
+    "category": "religious",
+    "title": "Spiritual wellness disguises",
+    "content": "Events labeled 'spiritual wellness,' 'mindful meditation with prayer,' 'healing circle,' or 'soul care' often have religious underpinnings. Yoga events that include chanting, kirtan, or reference specific deities cross from exercise into spiritual practice. Look for terms like 'dharma,' 'sangha,' 'spirit-led,' or 'divinely inspired.'"
+  },
+  {
+    "category": "religious",
+    "title": "Holiday events with religious context",
+    "content": "Easter egg hunts at churches, Christmas events hosted by ministries, Hanukkah celebrations at temples, and Ramadan iftars at mosques are religious events even when they emphasize the cultural or family-friendly aspects. The religious holiday context and hosting organization reveal the nature."
+  },
+  {
+    "category": "religious",
+    "title": "Recovery and 12-step programs",
+    "content": "Twelve-step programs (AA, NA, etc.) reference a 'higher power' and often meet in church basements. While valuable, they have spiritual components. Secular alternatives like SMART Recovery or Refuge Recovery exist. Events should be evaluated for whether spiritual elements are core to participation."
+  },
+  {
+    "category": "religious",
+    "title": "Interfaith and ecumenical events",
+    "content": "Events described as 'interfaith,' 'ecumenical,' 'multi-faith,' or 'spiritual gathering' are explicitly religious, even though they include multiple traditions. The presence of prayer, worship, or spiritual practice of any kind makes these religious events regardless of inclusivity claims."
+  },
+  {
+    "category": "religious",
+    "title": "Chaplaincy and campus ministry events",
+    "content": "University chaplaincy events, campus ministry gatherings, and student religious organization events are religious even when they offer free food, social activities, or study groups. Organizations like Cru, InterVarsity, Young Life, Hillel, or Newman Centers are religious groups."
+  },
+  {
+    "category": "religious",
+    "title": "Meditation vs spiritual meditation",
+    "content": "Secular mindfulness meditation (MBSR, app-based meditation meetups, or clinical mindfulness groups) differs from spiritual meditation tied to Buddhist, Hindu, or other religious traditions. Check if the event references a specific spiritual tradition, teacher lineage, or includes ritual elements."
+  },
+  {
+    "category": "religious",
+    "title": "Venue-based religious indicators",
+    "content": "Events at venues with names like 'Community of Faith Center,' 'The Gathering Place' (when affiliated with a church), or multipurpose rooms at houses of worship are religious-adjacent. Some community centers share space with religious organizations, so check the hosting organization, not just the venue name."
+  },
+  {
+    "category": "religious",
+    "title": "Secular safe spaces",
+    "content": "Public libraries, city-run community centers, public parks, secular nonprofits, universities (non-religious), museums, and commercial venues are reliably secular. Events run by city parks departments, library systems, or secular civic organizations can be trusted as non-religious."
+  },
+  {
+    "category": "political",
+    "title": "Fundraiser and PAC events",
+    "content": "Events hosted by political action committees (PACs), campaign offices, or that mention specific candidates are political. Fundraiser dinners, meet-and-greets with elected officials, and canvassing events are explicitly political regardless of how they are framed."
+  },
+  {
+    "category": "political",
+    "title": "Partisan organization events",
+    "content": "Events organized by explicitly partisan groups (local Democratic or Republican clubs, progressive or conservative action groups, party chapters) are political. Even their social events, picnics, or 'community conversations' serve partisan organizing purposes."
+  },
+  {
+    "category": "political",
+    "title": "Advocacy disguised as community",
+    "content": "Some advocacy events frame partisan positions as community engagement. 'Town halls' run by partisan organizations, 'community conversations about [policy issue]' hosted by advocacy groups, or 'action meetings' for specific legislation are political. Check the hosting organization's mission statement or About page."
+  },
+  {
+    "category": "political",
+    "title": "Labor and union events",
+    "content": "Union rallies, labor organizing events, strikes, and workers' rights marches have political dimensions. While labor rights are important, these events involve political advocacy and organizing. Evaluate based on whether the primary activity is political action."
+  },
+  {
+    "category": "political",
+    "title": "Environmental activism events",
+    "content": "Climate marches, environmental protests, pipeline opposition events, and conservation advocacy rallies are political activism. Nature hikes, park cleanups, and tree planting organized by parks departments or environmental education nonprofits are generally not political."
+  },
+  {
+    "category": "political",
+    "title": "Civic vs political distinction",
+    "content": "Voter registration drives, census participation events, and nonpartisan civic education are civic activities, not political. However, if hosted by a partisan organization, they become political outreach tools. The hosting organization determines the political nature more than the activity itself."
+  },
+  {
+    "category": "political",
+    "title": "Protest and march events",
+    "content": "Marches, protests, rallies, demonstrations, and vigils for specific political causes are inherently political regardless of the cause. Even causes with broad support (like anti-violence marches) are political activism. The format of organized collective political expression is the indicator."
+  },
+  {
+    "category": "political",
+    "title": "Book clubs and speaker events",
+    "content": "Book clubs discussing politically-charged books, speaker events featuring political commentators, or screening events for political documentaries are political in nature. The content and framing determine political nature, not the format. A book club reading a novel is different from one reading a political manifesto."
+  },
+  {
+    "category": "political",
+    "title": "Neutral community organizations",
+    "content": "Rotary clubs, Lions clubs, Kiwanis, neighborhood associations, HOAs, and similar civic organizations are generally apolitical. Their service projects, community meals, and social events focus on community building rather than political advocacy. City-organized events are also typically apolitical."
+  },
+  {
+    "category": "cost",
+    "title": "Suggested donation patterns",
+    "content": "Events with 'suggested donation,' 'pay what you can,' 'donation-based,' or 'love offering' are NOT free. The social pressure to pay, even if technically optional, means attendees feel obligated to contribute. These fail a strict free-events filter."
+  },
+  {
+    "category": "cost",
+    "title": "Free with registration caveats",
+    "content": "Some events listed as 'free' require registration through platforms that add service fees, or require purchasing a separate item (like a book for a book signing, or supplies for a craft class). 'Free admission' may not mean free participation if materials or extras cost money."
+  },
+  {
+    "category": "cost",
+    "title": "Eventbrite free event nuances",
+    "content": "On Eventbrite, events can be listed as 'free' while having paid add-ons, VIP tiers, or required purchases. The 'free' label on Eventbrite means the base ticket is $0, but the actual event experience may involve costs. Check the full event description for hidden charges."
+  },
+  {
+    "category": "cost",
+    "title": "Free trial and promotional events",
+    "content": "Events framed as 'free first class,' 'free trial session,' or 'introductory offer' are marketing funnels for paid services. While technically free to attend, they exist to convert attendees into paying customers. Fitness studios, martial arts dojos, and membership-based organizations commonly use this model."
+  },
+  {
+    "category": "cost",
+    "title": "Community meals and food banks",
+    "content": "Community meals at churches, food pantries, soup kitchens, and free lunch programs are genuinely free. However, they may have religious components (see religious heuristics). Meals at community centers funded by city programs or secular nonprofits are reliably free and secular."
+  },
+  {
+    "category": "cost",
+    "title": "Park and library events",
+    "content": "Events organized by city parks departments and public library systems are almost always genuinely free. These are taxpayer-funded services designed for public access. Story times, park concerts, nature walks led by rangers, and library workshops are reliable free events."
+  },
+  {
+    "category": "cost",
+    "title": "Museum free days and hours",
+    "content": "Many museums offer free admission on specific days or during certain hours (e.g., first Friday free, free after 4pm). These are genuinely free. However, special exhibitions, planetarium shows, or IMAX screenings within the museum may still cost extra even on free days."
+  },
+  {
+    "category": "cost",
+    "title": "Ticketed free events",
+    "content": "Some free events require tickets for capacity management. If the ticket is $0 with no fees, this is genuinely free. However, some platforms charge processing fees even for free tickets ($1-3). Check whether 'free tickets' have any associated fees before confirming as truly free."
+  },
+  {
+    "category": "cost",
+    "title": "Fundraiser events with entry fees",
+    "content": "Charity walks, fun runs, and community 5Ks may say 'free to participate' but often have registration fees or strongly encourage donations. The fundraising purpose means money is expected. Day-of registration, t-shirt costs, or suggested minimums are common hidden costs."
+  },
+  {
+    "category": "cost",
+    "title": "Meetup group event costs",
+    "content": "Meetup.com groups sometimes charge event fees or require venue minimums. A board game night at a cafe may require a purchase. A hiking meetup is free, but a cooking class meetup may have ingredient fees. The platform listing as free does not guarantee the event itself is free."
+  },
+  {
+    "category": "family",
+    "title": "Age-appropriate timing",
+    "content": "Events starting after 8pm or marketed for 'adults only,' '21+,' or '18+' are not family-friendly by definition. Late-night events, even those not explicitly age-restricted, are impractical for families with young children. Daytime and early evening events are more likely family-appropriate."
+  },
+  {
+    "category": "family",
+    "title": "Content and theme indicators",
+    "content": "Events involving comedy shows (which may include adult humor), horror-themed events, haunted houses for adults, burlesque, drag brunches, or events with explicit content warnings are not family-friendly. Look for age recommendations, content warnings, or adult-oriented themes in descriptions."
+  },
+  {
+    "category": "family",
+    "title": "Genuinely family-friendly signals",
+    "content": "Events that explicitly mention 'all ages,' 'bring the kids,' 'family-friendly,' children's activities, face painting, bounce houses, or kid-specific programming are designed for families. Events at children's museums, playgrounds, or family recreation centers are inherently family-oriented."
+  },
+  {
+    "category": "family",
+    "title": "Bar and nightclub family events",
+    "content": "Some bars and nightclubs host daytime 'family-friendly' events like brunch or afternoon activities. While technically open to children, the venue is primarily designed for adult entertainment and drinking. The environment may not be truly appropriate for families despite the labeling."
+  },
+  {
+    "category": "family",
+    "title": "Sports events and family safety",
+    "content": "Professional sporting events can be family-friendly in terms of content but involve alcohol sales, rowdy crowds, and late endings. Minor league games, community sports events, and youth leagues are more reliably family-friendly. College games vary depending on the tailgating culture."
+  },
+  {
+    "category": "family",
+    "title": "Outdoor adventure age limits",
+    "content": "Hiking groups, kayaking events, and outdoor adventures may have implicit age or fitness requirements even if not stated. Events described as 'strenuous,' 'advanced,' or involving technical terrain are not suitable for young children. Look for distance, elevation gain, or difficulty ratings."
+  },
+  {
+    "category": "general",
+    "title": "Eventbrite search result quality",
+    "content": "Eventbrite search results often include recurring events, cancelled-but-still-listed events, and events from different cities that share keywords. Always verify the date is current and the city matches. Events with generic descriptions or stock photos may be spam listings or automated postings."
+  },
+  {
+    "category": "general",
+    "title": "Meetup.com event reliability",
+    "content": "Meetup.com events may show as upcoming even when the group is inactive. Check the group's recent activity, RSVP count, and last event date. Groups with no activity in 3+ months may have stale listings. Events with 0-2 RSVPs close to the date may not actually happen."
+  },
+  {
+    "category": "general",
+    "title": "Facebook Events accuracy",
+    "content": "Facebook Events can be created by anyone and often lack verification. Dates may be wrong, venues may have changed, and some events are created for marketing rather than actual gatherings. Cross-reference Facebook events with the venue's official calendar when possible."
+  },
+  {
+    "category": "general",
+    "title": "Seasonal event patterns",
+    "content": "Summer brings more outdoor events (concerts in parks, festivals, farmers markets). Winter has more indoor events (holiday markets, craft fairs, indoor fitness). Spring and fall are transition periods with both. Seasonal expectations help identify events that seem out of place for the time of year."
+  },
+  {
+    "category": "general",
+    "title": "Multi-day festival filtering",
+    "content": "Multi-day festivals and fairs often have mixed programming — some family-friendly daytime activities and adult-oriented evening events. Do not assume the entire festival matches a single filter. Individual sessions or time slots within a festival should be evaluated separately."
+  },
+  {
+    "category": "general",
+    "title": "Virtual vs in-person events",
+    "content": "Search results may include virtual events, webinars, or hybrid events. If the user is looking for in-person community events, virtual-only events should be noted or filtered. Look for indicators like 'Zoom link,' 'virtual,' 'online,' or 'livestream' in descriptions."
+  },
+  {
+    "category": "general",
+    "title": "Recurring event staleness",
+    "content": "Recurring events (weekly yoga, monthly book club, etc.) may appear in search results with outdated descriptions or cancelled dates. The listed date may be auto-generated. Verify that the specific instance on the searched date is actually happening by checking recent updates or the host's page."
+  },
+  {
+    "category": "general",
+    "title": "Venue name interpretation",
+    "content": "Venue names can be misleading. 'The Church' might be a converted nightclub, not a house of worship. 'The Library' could be a cocktail bar. 'Paradise' could be a park or a strip club. Always consider the full event context, hosting organization, and event description rather than venue name alone."
+  },
+  {
+    "category": "general",
+    "title": "Pop-up and one-time events",
+    "content": "Pop-up events, one-time gatherings, and flash mob-style events may lack detailed descriptions or verified venues. These events carry higher uncertainty for all filter categories. When information is sparse, confidence scores should be lower to reflect the uncertainty."
+  },
+  {
+    "category": "alcohol",
+    "title": "Cooking class alcohol patterns",
+    "content": "Cooking classes at commercial kitchens or restaurants frequently include wine pairings or cocktail-making components. Classes described as 'pasta and wine,' 'cocktail making,' or hosted at venues with bars are alcohol-centric. Classes at community centers, libraries, or youth-focused organizations are more likely alcohol-free."
+  },
+  {
+    "category": "religious",
+    "title": "Yoga and Eastern practice nuances",
+    "content": "Standard fitness yoga at gyms and studios is secular. However, yoga events that include chanting (kirtan), spiritual readings, references to chakras as spiritual entities, or meditation with spiritual invocations cross into religious territory. Kundalini yoga in particular often has strong spiritual components. Check if the event is fitness-focused or spirituality-focused."
+  },
+  {
+    "category": "political",
+    "title": "Mutual aid and community organizing",
+    "content": "Mutual aid events, community fridges, free stores, and neighborhood support networks can range from apolitical community service to explicitly political organizing. The determining factor is whether the event involves political education, advocacy, or organizing alongside the direct service. A free clothing swap is apolitical; a clothing swap with voter registration is political."
+  },
+  {
+    "category": "cost",
+    "title": "Volunteer events and hidden expectations",
+    "content": "Volunteer events are free to participate in but sometimes expect financial contributions (like paying for your own supplies, transportation, or a 'volunteer fee' for international programs). Local park cleanups, habitat builds, and food bank volunteering are typically genuinely free. Check for any required purchases or donations."
+  },
+  {
+    "category": "family",
+    "title": "Pet-friendly vs family-friendly",
+    "content": "Pet-friendly events (dog park meetups, pet adoption events) are often family-friendly but not always. Large off-leash dog events may not be safe for toddlers. Events at dog bars or pet-friendly breweries combine animal activities with alcohol venues. Evaluate the venue independently from the pet-friendly label."
+  },
+  {
+    "category": "general",
+    "title": "Networking event expectations",
+    "content": "Professional networking events, startup meetups, and industry mixers often take place at bars or restaurants with expected drink purchases. Even those at co-working spaces may serve alcohol. The networking format implies a social drinking context in many cities. Check venue and refreshment details."
+  }
+]

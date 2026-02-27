@@ -20,7 +20,9 @@ Use this with `AI_ENGINEERING_LOCAL_SETUP.md`.
 ## Repository Target
 
 - Public repo: `https://github.com/damante21/ai-playground.git`
-- Private monorepo subtree path: `apps/ai-engineering/`
+- Host integration path (private/internal): `<PRIVATE_HOST_INTEGRATION_PATH_PLACEHOLDER>`
+  - This project can be embedded into a larger private host application, but those host-specific paths are intentionally not documented in this public subtree.
+  - Only public/subtree-safe paths and files are referenced in this repository.
 
 ---
 
@@ -77,7 +79,7 @@ TAVILY_API_KEY=tvly-...
 ```bash
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=ls-...
-LANGCHAIN_PROJECT=safespace-events
+LANGCHAIN_PROJECT=event-sourcer
 ```
 
 ### Langfuse (Evaluation / Datasets / RAGAS-like)

@@ -1,206 +1,197 @@
 # AI Engineering Local Setup
 
-Step-by-step guide to run the AI Engineering project locally in a standalone-friendly way. Keep this file updated as implementation changes.
+Step-by-step guide to run the AI Engineering project locally.
 
 Companion file: `AI_ENGINEERING_PROJECT_REQUIREMENTS.md`
 
 ---
 
-## 1) Clone and Install
+## 1) Prerequisites
 
-If using the public repo directly:
+- **Node.js** >= 20
+- **Docker** and **Docker Compose**
+- **PostgreSQL** 15+ (runs in Docker)
+- API keys for: OpenAI, Anthropic, Tavily, LangSmith, Langfuse
 
-```bash
-git clone git@github.com:damante21/ai-playground.git
-cd ai-playground
-npm install
+---
+
+## 2) Project Structure
+
+This project is designed to run as part of a host Node.js/Express application. The AI engineering module provides:
+
+- **Backend**: Agent logic, API routes, middleware — imported by the host Express server
+- **Frontend**: React components — imported as a route in the host React app
+
 ```
-
-If using from private monorepo subtree path:
-
-```bash
-cd /path/to/jamesdamante.com/apps/ai-engineering
-npm install
+ai-engineering/
+├── server/               # Backend: agents, routes, middleware, tools
+│   ├── agents/           # LangGraph agent nodes (supervisor, researcher, filter, categorizer)
+│   ├── routes/           # Express route definitions
+│   ├── middleware/        # Secret key auth middleware
+│   └── tools/            # Tavily search tool wrapper
+├── src/                  # Frontend: React components for /ai-engineering route
+│   ├── pages/            # AIEngineeringPage
+│   ├── components/       # SecretKeyGate, ChatInterface, ChatMessage
+│   ├── hooks/            # useChat
+│   └── lib/              # API client
+├── data/                 # RAG source data (venues)
+├── docs/                 # Deliverables and setup docs
+└── package.json          # Lists peer dependencies (installed in host server)
 ```
 
 ---
 
-## 2) Create Environment File
+## 3) Host Application Integration
 
-Create `.env` in the runtime server context and set all required values:
+The AI engineering module integrates into a host application as follows:
+
+### Backend
+
+The host Express server imports and mounts the AI engineering routes:
+
+```typescript
+import aiEngineeringRoutes from '<path-to>/ai-engineering/server/routes/aiEngineering'
+app.use('/api/ai-engineering', aiEngineeringRoutes)
+```
+
+AI-specific dependencies (LangChain, Anthropic, Tavily, etc.) are installed in the host server's `package.json`. See the `peerDependencies` in this project's `package.json` for the full list.
+
+### Frontend
+
+The host React app adds a route that renders the AI engineering page:
+
+```typescript
+import AIEngineeringPage from '<path-to>/ai-engineering/src/pages/AIEngineeringPage'
+
+<Route path="/ai-engineering" element={<AIEngineeringPage />} />
+```
+
+### Module Resolution
+
+The AI engineering server code resolves packages from the host server's `node_modules/`. Locally, this is achieved via a symlink:
 
 ```bash
-AI_ENGINEERING_SECRET_KEY=change-me
+ln -s <path-to-host-server>/node_modules ai-engineering/node_modules
+```
 
+In Docker, the host server's node_modules volume is mounted at `ai-engineering/node_modules`.
+
+---
+
+## 4) Environment Variables
+
+Add to the host server's `.env` file:
+
+```bash
+# AI Engineering - Access Gate
+AI_ENGINEERING_SECRET_KEY=<your-secret-key>
+
+# OpenAI (researcher + categorizer agents, embeddings)
 OPENAI_API_KEY=sk-...
+
+# Anthropic (supervisor + filter agents)
 ANTHROPIC_API_KEY=sk-ant-...
+
+# Tavily (web search tool for researcher agents)
 TAVILY_API_KEY=tvly-...
 
+# LangSmith (tracing + observability)
 LANGCHAIN_TRACING_V2=true
 LANGCHAIN_API_KEY=ls-...
-LANGCHAIN_PROJECT=safespace-events
+LANGCHAIN_PROJECT=event-sourcer
 
+# Langfuse (golden datasets + RAGAS evaluation)
 LANGFUSE_PUBLIC_KEY=pk-lf-...
 LANGFUSE_SECRET_KEY=sk-lf-...
 LANGFUSE_BASE_URL=https://cloud.langfuse.com
-
-DATABASE_URL=postgresql://user:password@localhost:5432/ai_engineering
 ```
 
 Never commit this file.
 
 ---
 
-## 3) Start PostgreSQL + Enable pgvector
+## 5) Database Setup
 
-Run PostgreSQL and ensure `pgvector` is enabled:
+PostgreSQL with pgvector extension:
 
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
 
-Then apply/create schema for:
-- `ai_engineering_venues`
-- LangGraph checkpoint/store tables (via `PostgresSaver.setup()` / `PostgresStore.setup()`)
+Additional tables needed:
+- `ai_engineering_venues` — RAG venue knowledge base with vector embeddings
+- LangGraph checkpoint/store tables — created automatically via `PostgresSaver.setup()` / `PostgresStore.setup()`
 
 ---
 
-## 4) Build/Serve Modes
+## 6) Running Locally
 
-There are two primary local modes.
-
-### Mode A: Full app through main Node server (closest to production)
-
-1. Build Vite frontend:
+### With Docker (recommended)
 
 ```bash
-cd apps/ai-engineering
-npm run build
+docker compose up --build
 ```
 
-2. Start main backend server (from repo root/server workspace, depending on project scripts)
-3. Open:
-   - UI: `http://localhost:<PORT>/ai-engineering`
-   - API: `http://localhost:<PORT>/api/ai-engineering/*`
+- UI: `http://localhost:3000/ai-engineering`
+- API: `http://localhost:8000/api/ai-engineering/health`
 
-### Mode B: Frontend dev + backend API
+### Without Docker
 
-1. Start backend API server
-2. Start Vite dev server:
-
-```bash
-cd apps/ai-engineering
-npm run dev
-```
-
-3. Ensure Vite proxy forwards `/api/ai-engineering` to backend.
+1. Start PostgreSQL
+2. Install host server dependencies: `cd <host-server> && npm install`
+3. Create symlink: `ln -s <host-server>/node_modules ai-engineering/node_modules`
+4. Start host server: `cd <host-server> && npm run dev`
+5. Start host client: `cd <host-client> && npm run dev`
+6. Open: `http://localhost:3000/ai-engineering`
 
 ---
 
-## 5) Validate Critical Runtime Features
+## 7) Validate
+
+### Health Check
+
+```bash
+curl http://localhost:8000/api/ai-engineering/health
+```
+
+Returns which API keys are configured (boolean flags, not the keys themselves).
 
 ### Access Gate
 
 1. Open `/ai-engineering`
-2. Enter wrong secret key -> must reject
-3. Enter correct secret key -> must issue access token/session
-4. Verify API requests are blocked without token and allowed with token
+2. Enter the secret key from `.env`
+3. Should grant access to the chat interface
 
-### RAG Pipeline
+### Chat
 
-1. Ingest venue data into `ai_engineering_venues`
-2. Run a query and verify:
-   - Tavily returns raw event candidates
-   - retriever returns venue context
-   - filter uses both to produce final results
-
-### Memory
-
-1. Start search thread and ask follow-up refinement question
-2. Verify short-term memory via same `thread_id`
-3. Save preferences and start new session
-4. Verify long-term memory loads saved preferences
-
-### Evaluation
-
-1. Generate/load golden dataset
-2. Run baseline (`naive`) evaluation
-3. Run comparison (`bm25`, `multiQuery`, `hybrid`)
-4. Confirm Langfuse shows all 4 metrics:
-   - faithfulness
-   - response relevance
-   - context precision
-   - context recall
-5. Capture screenshot(s) and experiment/export IDs
+1. Type a query like "Find free family-friendly events in San Francisco"
+2. The agent pipeline processes: supervisor → researchers → filter → categorizer
+3. Response displays in the chat with categorized events
 
 ---
 
-## 6) Required Commands (Expected)
+## 8) Troubleshooting
 
-These scripts should exist (or equivalent):
+### Module not found errors
+
+Ensure the `node_modules` symlink exists and points to the host server's node_modules:
 
 ```bash
-# install
-npm install
-
-# frontend dev
-npm run dev
-
-# frontend build
-npm run build
-
-# eval baseline
-npm run eval:baseline
-
-# eval compare retrievers
-npm run eval:compare
+ls -la ai-engineering/node_modules
 ```
 
-If script names differ, keep this file updated with the real commands.
+### API key errors
 
----
+Check the health endpoint to see which keys are missing:
 
-## 7) Troubleshooting
-
-### Blank page / broken assets on `/ai-engineering`
-
-- Verify `vite.config.ts` has:
-
-```ts
-base: "/ai-engineering/"
+```bash
+curl http://localhost:8000/api/ai-engineering/health
 ```
 
-- Rebuild frontend and restart backend static serving.
+### Docker node_modules issues
 
-### No memory between follow-up queries
+If packages aren't found in Docker, rebuild:
 
-- Confirm `thread_id` is passed in graph invoke config.
-- Confirm `PostgresSaver` initialized with `setup()`.
-
-### Long-term prefs not loading
-
-- Confirm `PostgresStore` initialized with `setup()`.
-- Confirm namespace/key usage is consistent:
-  - `[session_key, "preferences"]` / `saved_filters`
-
-### No eval scores in Langfuse
-
-- Confirm evaluator library configured in Langfuse dashboard.
-- Confirm traces match evaluator filters.
-- Confirm dataset items are linked to traces/runs.
-
----
-
-## 8) Done Criteria (Local)
-
-Local setup is considered complete when:
-
-- app loads at `/ai-engineering`
-- secret-key auth gate works
-- search returns categorized results
-- memory works:
-  - in-thread follow-up context
-  - cross-session saved preferences
-- eval pipeline runs and outputs the 4 rubric metrics
-- evidence artifacts collected for `DELIVERABLES.md`
-
+```bash
+docker compose down && docker compose up --build
+```
