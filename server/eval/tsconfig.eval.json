@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "lib": ["ES2020"],
+    "types": ["node"],
+    "strict": false,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "outDir": "../../../../server/dist/eval",
+    "baseUrl": "../../../../server",
+    "paths": {
+      "*": ["node_modules/*"]
+    }
+  },
+  "include": ["./**/*", "../agents/**/*", "../rag/**/*"]
+}

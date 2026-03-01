@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useChat } from '../hooks/useChat'
 import { clearAuth } from '../lib/api'
 import ChatMessage from './ChatMessage'
@@ -8,6 +9,7 @@ interface ChatInterfaceProps {
 }
 
 export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
+  const navigate = useNavigate()
   const { messages, isLoading, error, sendMessage, clearMessages } = useChat()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -72,6 +74,12 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
             <p className="text-xs text-gray-500">AI-powered community event discovery</p>
           </div>
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/ai-engineering/eval')}
+              className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
+            >
+              Eval Dashboard
+            </button>
             <button
               onClick={clearMessages}
               className="text-xs text-gray-500 hover:text-gray-300 transition-colors"
