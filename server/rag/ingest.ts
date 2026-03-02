@@ -13,7 +13,9 @@ function getPool(): Pool {
 }
 
 export async function ingestHeuristics(): Promise<void> {
-  const dataPath = resolve(__dirname, '../../data/heuristics.json')
+  const dataPath = typeof __dirname !== 'undefined'
+    ? resolve(__dirname, '../../data/heuristics.json')
+    : resolve(process.cwd(), 'data/heuristics.json')
   const raw = readFileSync(dataPath, 'utf-8')
   const entries: HeuristicEntry[] = JSON.parse(raw)
   const chunked = chunkHeuristics(entries)
@@ -59,7 +61,11 @@ export async function ingestHeuristics(): Promise<void> {
   }
 }
 
-if (require.main === module) {
+const isDirectRun = typeof require !== 'undefined'
+  ? require.main === module
+  : process.argv[1]?.includes('ingest')
+
+if (isDirectRun) {
   ingestHeuristics()
     .then(() => {
       console.log('Ingestion complete.')
