@@ -18,7 +18,7 @@ async function getGraph() {
   }
 }
 
-const router = Router()
+const router: Router = Router()
 
 interface LangfuseScore {
   id: string
