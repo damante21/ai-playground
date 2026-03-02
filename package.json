@@ -2,20 +2,54 @@
   "name": "ai-engineering",
   "version": "1.0.0",
   "private": true,
-  "description": "Event Sourcer - AI-powered event discovery with event sourcing filtering",
+  "description": "AI Powered Event Sourcer - agentic event discovery with values-based filtering",
   "engines": {
     "node": ">=20"
   },
-  "peerDependencies": {
+  "scripts": {
+    "dev:server": "ts-node --transpile-only standalone/server.ts",
+    "dev:client": "vite --config standalone/vite.config.ts",
+    "ingest": "ts-node --transpile-only server/rag/ingest.ts",
+    "eval:naive": "ts-node --transpile-only --project server/eval/tsconfig.eval.json server/eval/runEval.ts naive",
+    "eval:bm25": "ts-node --transpile-only --project server/eval/tsconfig.eval.json server/eval/runEval.ts bm25",
+    "eval:multiQuery": "ts-node --transpile-only --project server/eval/tsconfig.eval.json server/eval/runEval.ts multiQuery",
+    "eval:hybrid": "ts-node --transpile-only --project server/eval/tsconfig.eval.json server/eval/runEval.ts hybrid"
+  },
+  "dependencies": {
     "@langchain/langgraph": "^1.2.0",
+    "@langchain/langgraph-checkpoint-postgres": "^1.0.1",
     "@langchain/core": "^1.1.29",
     "@langchain/openai": "^1.2.11",
     "@langchain/anthropic": "^1.3.21",
     "@langchain/community": "^1.1.20",
     "@tavily/core": "^0.7.2",
+    "@langfuse/client": "^4.6.1",
+    "@langfuse/otel": "^4.6.1",
+    "@opentelemetry/sdk-node": "^0.212.0",
     "langsmith": "^0.5.7",
     "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "pg": "^8.11.3",
     "jsonwebtoken": "^9.0.2",
-    "zod": "^3.22.4"
+    "zod": "^3.22.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.2",
+    "ts-node": "^10.9.1",
+    "vite": "^5.0.0",
+    "@vitejs/plugin-react": "^4.1.1",
+    "tailwindcss": "^4.1.12",
+    "@tailwindcss/vite": "^4.1.12",
+    "@types/express": "^4.17.21",
+    "@types/cors": "^2.8.17",
+    "@types/node": "^20.19.10",
+    "@types/pg": "^8.10.9",
+    "@types/jsonwebtoken": "^9.0.5",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15"
   }
 }

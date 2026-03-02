@@ -48,20 +48,30 @@ This project is built for an AI engineering certification challenge and focuses 
 ## Repository Structure
 
 ```text
-apps/ai-engineering/
-├── src/                     # Frontend app
+ai-engineering/
+├── standalone/              # Standalone entry points (server, client, configs)
+├── src/                     # Frontend React components
 ├── server/                  # API, agents, retrieval, evaluation, memory
 ├── data/                    # Curated filtering heuristics (RAG source)
-├── docs/                    # Certification deliverables
-└── README.md
+├── docs/                    # Certification deliverables + setup guide
+├── docker-compose.yml       # 3-service Docker stack
+├── Dockerfile.server
+├── Dockerfile.client
+├── .env.example
+└── package.json
 ```
 
-## Local Setup
+## Quick Start
 
-For full setup requirements and local run steps, see:
+```bash
+git clone https://github.com/damante21/ai-playground.git
+cd ai-playground
+cp .env.example .env   # Fill in your API keys
+docker-compose up --build
+# Open http://localhost:3000/ai-engineering
+```
 
-- `docs/AI_ENGINEERING_PROJECT_REQUIREMENTS.md`
-- `docs/AI_ENGINEERING_LOCAL_SETUP.md`
+For detailed setup instructions, see `docs/AI_ENGINEERING_LOCAL_SETUP.md`.
 
 ## Certification Submission
 

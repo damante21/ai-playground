@@ -143,7 +143,7 @@ CREATE EXTENSION IF NOT EXISTS vector;
 
 ### Required Tables (minimum)
 
-1. `ai_engineering_venues` (RAG knowledge base)
+1. `filtering_heuristics` (RAG knowledge base with pgvector embeddings and FTS)
 2. LangGraph checkpoint tables (for `PostgresSaver`)
 3. LangGraph store tables (for `PostgresStore`)
 

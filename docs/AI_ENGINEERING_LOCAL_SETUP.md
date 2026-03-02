@@ -1,197 +1,195 @@
-# AI Engineering Local Setup
+# AI Engineering — Local Setup
 
-Step-by-step guide to run the AI Engineering project locally.
-
-Companion file: `AI_ENGINEERING_PROJECT_REQUIREMENTS.md`
+Run the AI Powered Event Sourcer locally with a single command.
 
 ---
 
-## 1) Prerequisites
+## Prerequisites
 
-- **Node.js** >= 20
-- **Docker** and **Docker Compose**
-- **PostgreSQL** 15+ (runs in Docker)
-- API keys for: OpenAI, Anthropic, Tavily, LangSmith, Langfuse
+- **Docker** and **Docker Compose** (v2)
+- API keys for: **OpenAI**, **Anthropic**, **Tavily**, **LangSmith**, **Langfuse**
+
+That's it — Node.js, PostgreSQL, and pgvector all run inside Docker containers.
 
 ---
 
-## 2) Project Structure
+## Quick Start
 
-This project is designed to run as part of a host Node.js/Express application. The AI engineering module provides:
+```bash
+# 1. Clone the repo
+git clone https://github.com/damante21/ai-playground.git
+cd ai-playground
 
-- **Backend**: Agent logic, API routes, middleware — imported by the host Express server
-- **Frontend**: React components — imported as a route in the host React app
+# 2. Create your .env from the template
+cp .env.example .env
+# → Fill in your API keys (see section below)
+
+# 3. Start everything
+docker-compose up --build
+
+# 4. Open the app
+# → http://localhost:3000/ai-engineering
+```
+
+On first boot the server automatically:
+1. Runs database migrations (pgvector extension, filtering_heuristics table, FTS indexes)
+2. Ingests the heuristics dataset into pgvector
+
+---
+
+## Environment Variables
+
+Copy `.env.example` to `.env` and fill in the values:
+
+| Variable | Required | Purpose |
+|---|:---:|---|
+| `AI_ENGINEERING_SECRET_KEY` | Yes | Access gate passphrase |
+| `JWT_SECRET` | Yes | Signs auth tokens |
+| `OPENAI_API_KEY` | Yes | Researcher + categorizer agents, embeddings |
+| `ANTHROPIC_API_KEY` | Yes | Supervisor + filter agents |
+| `TAVILY_API_KEY` | Yes | Web search tool |
+| `LANGCHAIN_TRACING_V2` | No | Enable LangSmith tracing (`true`) |
+| `LANGCHAIN_API_KEY` | No | LangSmith API key |
+| `LANGCHAIN_PROJECT` | No | LangSmith project name |
+| `LANGFUSE_PUBLIC_KEY` | No | Langfuse evaluation public key |
+| `LANGFUSE_SECRET_KEY` | No | Langfuse evaluation secret key |
+| `LANGFUSE_BASE_URL` | No | Langfuse host URL |
+| `DATABASE_URL` | No | Auto-set by docker-compose |
+
+---
+
+## Project Structure
 
 ```
 ai-engineering/
-├── server/               # Backend: agents, routes, middleware, tools
-│   ├── agents/           # LangGraph agent nodes (supervisor, researcher, filter, categorizer)
-│   ├── routes/           # Express route definitions
-│   ├── middleware/        # Secret key auth middleware
-│   └── tools/            # Tavily search tool wrapper
-├── src/                  # Frontend: React components for /ai-engineering route
-│   ├── pages/            # AIEngineeringPage
-│   ├── components/       # SecretKeyGate, ChatInterface, ChatMessage
-│   ├── hooks/            # useChat
-│   └── lib/              # API client
-├── data/                 # RAG source data (venues)
-├── docs/                 # Deliverables and setup docs
-└── package.json          # Lists peer dependencies (installed in host server)
+├── standalone/             # Standalone entry points (server, client, configs)
+│   ├── server.ts           # Express bootstrap — migrations + ingestion + routes
+│   ├── index.html          # Vite HTML entry
+│   ├── main.tsx            # React root
+│   ├── App.tsx             # Router (/ → /ai-engineering)
+│   ├── tailwind.css        # Tailwind v4 entry
+│   ├── vite.config.ts      # Vite dev config with API proxy
+│   ├── tsconfig.server.json
+│   ├── tsconfig.client.json
+│   └── migrations/         # SQL migrations run on startup
+├── server/                 # Backend logic
+│   ├── agents/             # LangGraph nodes (supervisor, researcher, filter, categorizer)
+│   ├── routes/             # Express route definitions
+│   ├── middleware/          # Secret key auth middleware
+│   ├── rag/                # RAG retrievers (naive, BM25, multi-query, hybrid)
+│   ├── memory/             # LangGraph checkpointer + cross-thread store
+│   ├── tools/              # Tavily search wrapper
+│   └── eval/               # RAGAS evaluation harness
+├── src/                    # Frontend React components
+│   ├── pages/              # AIEngineeringPage, EvalDashboardPage
+│   ├── components/         # SecretKeyGate, ChatInterface, ChatMessage, eval/*
+│   ├── hooks/              # useChat
+│   └── lib/                # API client
+├── data/                   # Heuristics JSON + Langfuse CSV exports
+├── docs/                   # Deliverables, requirements, setup docs
+├── docker-compose.yml      # 3-service stack (postgres, server, client)
+├── Dockerfile.server
+├── Dockerfile.client
+├── .env.example
+└── package.json
 ```
 
 ---
 
-## 3) Host Application Integration
+## Services
 
-The AI engineering module integrates into a host application as follows:
+| Service | Port | Description |
+|---|---|---|
+| `postgres` | 5432 | pgvector/pgvector:pg15 — vector DB with FTS |
+| `server` | 8000 | Node.js Express API |
+| `client` | 3000 | Vite dev server (React + Tailwind) |
 
-### Backend
+---
 
-The host Express server imports and mounts the AI engineering routes:
+## Running Without Docker
 
-```typescript
-import aiEngineeringRoutes from '<path-to>/ai-engineering/server/routes/aiEngineering'
-app.use('/api/ai-engineering', aiEngineeringRoutes)
-```
-
-AI-specific dependencies (LangChain, Anthropic, Tavily, etc.) are installed in the host server's `package.json`. See the `peerDependencies` in this project's `package.json` for the full list.
-
-### Frontend
-
-The host React app adds a route that renders the AI engineering page:
-
-```typescript
-import AIEngineeringPage from '<path-to>/ai-engineering/src/pages/AIEngineeringPage'
-
-<Route path="/ai-engineering" element={<AIEngineeringPage />} />
-```
-
-### Module Resolution
-
-The AI engineering server code resolves packages from the host server's `node_modules/`. Locally, this is achieved via a symlink:
+If you prefer running natively:
 
 ```bash
-ln -s <path-to-host-server>/node_modules ai-engineering/node_modules
-```
+# 1. Install deps
+npm install
 
-In Docker, the host server's node_modules volume is mounted at `ai-engineering/node_modules`.
+# 2. Start PostgreSQL with pgvector locally (or use a managed instance)
+#    Set DATABASE_URL in .env pointing to your Postgres
+
+# 3. Start the server
+npm run dev:server
+
+# 4. In a second terminal, start the client
+npm run dev:client
+
+# 5. Open http://localhost:3000/ai-engineering
+```
 
 ---
 
-## 4) Environment Variables
+## Running Evaluations
 
-Add to the host server's `.env` file:
+RAGAS evaluations use a golden dataset in Langfuse and LLM-as-judge scoring.
 
 ```bash
-# AI Engineering - Access Gate
-AI_ENGINEERING_SECRET_KEY=<your-secret-key>
-
-# OpenAI (researcher + categorizer agents, embeddings)
-OPENAI_API_KEY=sk-...
-
-# Anthropic (supervisor + filter agents)
-ANTHROPIC_API_KEY=sk-ant-...
-
-# Tavily (web search tool for researcher agents)
-TAVILY_API_KEY=tvly-...
-
-# LangSmith (tracing + observability)
-LANGCHAIN_TRACING_V2=true
-LANGCHAIN_API_KEY=ls-...
-LANGCHAIN_PROJECT=event-sourcer
-
-# Langfuse (golden datasets + RAGAS evaluation)
-LANGFUSE_PUBLIC_KEY=pk-lf-...
-LANGFUSE_SECRET_KEY=sk-lf-...
-LANGFUSE_BASE_URL=https://cloud.langfuse.com
+# Run against a specific retriever
+npm run eval:naive
+npm run eval:bm25
+npm run eval:multiQuery
+npm run eval:hybrid
 ```
 
-Never commit this file.
+Results are pushed to Langfuse as experiment runs. View them in the Langfuse dashboard or at `/ai-engineering/eval` in the app.
 
 ---
 
-## 5) Database Setup
-
-PostgreSQL with pgvector extension:
-
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
-```
-
-Additional tables needed:
-- `ai_engineering_venues` — RAG venue knowledge base with vector embeddings
-- LangGraph checkpoint/store tables — created automatically via `PostgresSaver.setup()` / `PostgresStore.setup()`
-
----
-
-## 6) Running Locally
-
-### With Docker (recommended)
-
-```bash
-docker compose up --build
-```
-
-- UI: `http://localhost:3000/ai-engineering`
-- API: `http://localhost:8000/api/ai-engineering/health`
-
-### Without Docker
-
-1. Start PostgreSQL
-2. Install host server dependencies: `cd <host-server> && npm install`
-3. Create symlink: `ln -s <host-server>/node_modules ai-engineering/node_modules`
-4. Start host server: `cd <host-server> && npm run dev`
-5. Start host client: `cd <host-client> && npm run dev`
-6. Open: `http://localhost:3000/ai-engineering`
-
----
-
-## 7) Validate
+## Validate
 
 ### Health Check
 
 ```bash
-curl http://localhost:8000/api/ai-engineering/health
+curl http://localhost:8000/health
 ```
-
-Returns which API keys are configured (boolean flags, not the keys themselves).
 
 ### Access Gate
 
-1. Open `/ai-engineering`
-2. Enter the secret key from `.env`
+1. Open `http://localhost:3000/ai-engineering`
+2. Enter the `AI_ENGINEERING_SECRET_KEY` value from `.env`
 3. Should grant access to the chat interface
 
 ### Chat
 
 1. Type a query like "Find free family-friendly events in San Francisco"
 2. The agent pipeline processes: supervisor → researchers → filter → categorizer
-3. Response displays in the chat with categorized events
+3. Response displays categorized events with match explanations
+
+### Eval Dashboard
+
+Navigate to `http://localhost:3000/ai-engineering/eval` to see RAGAS metrics and retriever comparisons.
 
 ---
 
-## 8) Troubleshooting
+## Troubleshooting
 
-### Module not found errors
-
-Ensure the `node_modules` symlink exists and points to the host server's node_modules:
+### Container won't start
 
 ```bash
-ls -la ai-engineering/node_modules
+docker-compose down -v && docker-compose up --build
 ```
+
+The `-v` flag removes the postgres volume — use only if you want a fresh database.
 
 ### API key errors
 
-Check the health endpoint to see which keys are missing:
+Check the health endpoint:
 
 ```bash
 curl http://localhost:8000/api/ai-engineering/health
 ```
 
-### Docker node_modules issues
+Returns boolean flags showing which keys are configured.
 
-If packages aren't found in Docker, rebuild:
+### Port conflicts
 
-```bash
-docker compose down && docker compose up --build
-```
+If 3000, 5432, or 8000 are in use, either stop the conflicting process or change ports in `docker-compose.yml`.
