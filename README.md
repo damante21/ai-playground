@@ -18,7 +18,7 @@ This project is built for an AI engineering certification challenge and focuses 
 
 - Values-based event search by city
 - Multi-agent workflow (supervisor, researchers, filter, categorizer)
-- RAG context from curated venue/community knowledge
+- RAG context from curated filtering heuristics knowledge base (65 entries, 6 categories)
 - Multiple retrieval strategies (naive, BM25, multi-query, hybrid)
 - In-thread memory (short-term) and saved preferences (long-term)
 - Tracing/observability and evaluation instrumentation
@@ -51,7 +51,7 @@ This project is built for an AI engineering certification challenge and focuses 
 apps/ai-engineering/
 ├── src/                     # Frontend app
 ├── server/                  # API, agents, retrieval, evaluation, memory
-├── data/                    # Curated RAG source data
+├── data/                    # Curated filtering heuristics (RAG source)
 ├── docs/                    # Certification deliverables
 └── README.md
 ```
@@ -66,11 +66,9 @@ For full setup requirements and local run steps, see:
 ## Certification Submission
 
 - **Loom Demo (<= 5 min):** `<ADD_LOOM_LINK>`
-- **Demo URL (local/public):** `<ADD_DEMO_URL>`
+- **Demo URL (local):** `http://localhost:3000/ai-engineering`
+- **Demo URL (public):** `https://jamesdamante.com/ai-engineering`
 - **Written Deliverables:** `docs/DELIVERABLES.md`
-- **Internal planning checklist (not public):** `<PRIVATE_INTERNAL_CHECKLIST_PLACEHOLDER>`
-  - This project is developed with additional private planning artifacts that are not included in the public repository.
-  - Public submission requirements are fully captured in `docs/DELIVERABLES.md`.
 
 ## Development Notes
 
