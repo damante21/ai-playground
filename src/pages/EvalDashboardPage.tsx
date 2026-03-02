@@ -1,10 +1,18 @@
 import { useState, useEffect, useCallback } from 'react'
 import { isAuthenticated, fetchEvalResults, fetchEvalDataset } from '../lib/api'
-import type { EvalResultsResponse, EvalDatasetResponse } from '../lib/api'
+import type { EvalResultsResponse, EvalDatasetResponse, EvalRun } from '../lib/api'
 import SecretKeyGate from '../components/SecretKeyGate'
 import EvalHeader from '../components/eval/EvalHeader'
 import MetricCard from '../components/eval/MetricCard'
 import ResultsTable from '../components/eval/ResultsTable'
+import RetrieverComparison from '../components/eval/RetrieverComparison'
+
+const RETRIEVER_LABELS: Record<string, string> = {
+  naive: 'Naive',
+  bm25: 'BM25',
+  multiQuery: 'Multi-Query',
+  hybrid: 'Hybrid',
+}
 
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error'
 
@@ -14,6 +22,7 @@ export default function EvalDashboardPage() {
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<EvalResultsResponse | null>(null)
   const [dataset, setDataset] = useState<EvalDatasetResponse | null>(null)
+  const [selectedRetriever, setSelectedRetriever] = useState<string | null>(null)
 
   useEffect(() => {
     setAuthed(isAuthenticated())
@@ -43,10 +52,15 @@ export default function EvalDashboardPage() {
       return
     }
 
-    if (resultsRes.data) setResults(resultsRes.data)
+    if (resultsRes.data) {
+      setResults(resultsRes.data)
+      if (resultsRes.data.runs.length > 0 && !selectedRetriever) {
+        setSelectedRetriever(resultsRes.data.runs[0]!.experiment.retriever)
+      }
+    }
     if (datasetRes.data) setDataset(datasetRes.data)
     setLoadState('loaded')
-  }, [])
+  }, [selectedRetriever])
 
   useEffect(() => {
     if (authed && loadState === 'idle') {
@@ -58,9 +72,12 @@ export default function EvalDashboardPage() {
     return <SecretKeyGate onAuthenticated={() => setAuthed(true)} />
   }
 
+  const runs = results?.runs ?? []
+  const activeRun: EvalRun | undefined = runs.find(r => r.experiment.retriever === selectedRetriever)
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-950 text-gray-100">
-      <EvalHeader experiment={results?.experiment ?? null} />
+      <EvalHeader experiment={activeRun?.experiment ?? null} />
 
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8 space-y-8">
         {loadState === 'loading' && (
@@ -87,70 +104,98 @@ export default function EvalDashboardPage() {
           </div>
         )}
 
-        {loadState === 'loaded' && results && (
+        {loadState === 'loaded' && runs.length > 0 && (
           <>
-            {/* Metrics Summary */}
-            <section>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
-                RAGAS Metrics Summary
-              </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {results.metrics.map(metric => (
-                  <MetricCard key={metric.name} metric={metric} />
-                ))}
-              </div>
-            </section>
+            <RetrieverComparison
+              runs={runs}
+              selectedRetriever={selectedRetriever}
+              onSelectRetriever={setSelectedRetriever}
+            />
 
-            {/* Experiment Metadata */}
-            {results.experiment && (
-              <section className="bg-gray-900 border border-gray-800 rounded-xl p-5">
-                <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
-                  Experiment Details
-                </h2>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <p className="text-gray-500 text-xs">Retriever</p>
-                    <p className="text-gray-200">{results.experiment.retriever}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Model</p>
-                    <p className="text-gray-200">{results.experiment.model}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Top-K</p>
-                    <p className="text-gray-200">{results.experiment.topK}</p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs">Run Timestamp</p>
-                    <p className="text-gray-200">
-                      {results.experiment.runTimestamp
-                        ? new Date(results.experiment.runTimestamp).toLocaleString()
-                        : 'N/A'}
-                    </p>
-                  </div>
-                </div>
-              </section>
+            {runs.length > 1 && (
+              <div className="flex gap-2">
+                {runs.map(run => {
+                  const r = run.experiment.retriever
+                  const isActive = r === selectedRetriever
+                  return (
+                    <button
+                      key={r}
+                      onClick={() => setSelectedRetriever(r)}
+                      className={`px-4 py-2 text-sm rounded-lg transition-colors
+                        ${isActive
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-300'}`}
+                    >
+                      {RETRIEVER_LABELS[r] ?? r}
+                    </button>
+                  )
+                })}
+              </div>
             )}
 
-            {/* Per-Test-Case Results */}
-            <section>
-              <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
-                Per-Test-Case Results
-                <span className="ml-2 text-gray-600 normal-case">
-                  ({results.items.length} items — click a row to expand)
-                </span>
-              </h2>
-              <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
-                <ResultsTable items={results.items} datasetItems={dataset?.items ?? []} />
-              </div>
-            </section>
+            {activeRun && (
+              <>
+                <section>
+                  <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                    RAGAS Metrics &mdash; {RETRIEVER_LABELS[activeRun.experiment.retriever] ?? activeRun.experiment.retriever}
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {activeRun.metrics.map(metric => (
+                      <MetricCard key={metric.name} metric={metric} />
+                    ))}
+                  </div>
+                </section>
+
+                <section className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+                  <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
+                    Experiment Details
+                  </h2>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                    <div>
+                      <p className="text-gray-500 text-xs">Retriever</p>
+                      <p className="text-gray-200">{activeRun.experiment.retriever}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Model</p>
+                      <p className="text-gray-200">{activeRun.experiment.model}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Top-K</p>
+                      <p className="text-gray-200">{activeRun.experiment.topK}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500 text-xs">Run Timestamp</p>
+                      <p className="text-gray-200">
+                        {activeRun.experiment.runTimestamp
+                          ? new Date(activeRun.experiment.runTimestamp).toLocaleString()
+                          : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+                    Per-Test-Case Results
+                    <span className="ml-2 text-gray-600 normal-case">
+                      ({activeRun.items.length} items &mdash; click a row to expand)
+                    </span>
+                  </h2>
+                  <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+                    <ResultsTable items={activeRun.items} datasetItems={dataset?.items ?? []} />
+                  </div>
+                </section>
+              </>
+            )}
           </>
         )}
 
-        {loadState === 'loaded' && results && results.items.length === 0 && (
+        {loadState === 'loaded' && runs.length === 0 && (
           <div className="text-center py-20 text-gray-500">
             <p className="mb-2">No evaluation data found.</p>
-            <p className="text-sm">Run the baseline evaluation first: <code className="text-gray-400">npm run eval:baseline</code></p>
+            <p className="text-sm">
+              Run evaluations first: <code className="text-gray-400">npm run eval:all</code>
+            </p>
           </div>
         )}
       </main>

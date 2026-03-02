@@ -91,10 +91,14 @@ export interface EvalItem {
   comments: Record<string, string>
 }
 
-export interface EvalResultsResponse {
+export interface EvalRun {
   experiment: EvalExperiment
   metrics: EvalMetric[]
   items: EvalItem[]
+}
+
+export interface EvalResultsResponse {
+  runs: EvalRun[]
 }
 
 export interface DatasetItem {

@@ -1,4 +1,7 @@
 import { naiveRetrieve, type RetrievedHeuristic } from './naive'
+import { bm25Retrieve } from './bm25'
+import { multiQueryRetrieve } from './multiQuery'
+import { hybridRetrieve } from './hybrid'
 
 export type RetrieverType = 'naive' | 'bm25' | 'multiQuery' | 'hybrid'
 
@@ -10,9 +13,9 @@ export type RetrieverFn = (
 
 const retrievers: Record<RetrieverType, RetrieverFn> = {
   naive: naiveRetrieve,
-  bm25: naiveRetrieve,
-  multiQuery: naiveRetrieve,
-  hybrid: naiveRetrieve,
+  bm25: bm25Retrieve,
+  multiQuery: multiQueryRetrieve,
+  hybrid: hybridRetrieve,
 }
 
 let activeRetriever: RetrieverType = 'naive'

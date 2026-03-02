@@ -5,6 +5,8 @@ import { researcherNode } from './researcher'
 import { ragRetrievalNode } from './ragRetrieval'
 import { filterNode } from './filter'
 import { categorizerNode } from './categorizer'
+import { getCheckpointer } from '../memory/checkpointer'
+import { getStore } from '../memory/store'
 
 function routeAfterSupervisor(state: GraphStateType): string {
   if (state.status === 'complete') return END
@@ -37,5 +39,14 @@ const workflow = new StateGraph(GraphState)
   .addEdge('ragRetrieval', 'filter')
   .addEdge('filter', 'categorizer')
   .addEdge('categorizer', END)
+
+export async function compileGraph() {
+  const [checkpointer, store] = await Promise.all([
+    getCheckpointer(),
+    getStore(),
+  ])
+
+  return workflow.compile({ checkpointer, store })
+}
 
 export const agentGraph = workflow.compile()
