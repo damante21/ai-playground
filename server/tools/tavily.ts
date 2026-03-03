@@ -24,13 +24,16 @@ async function searchTavily(query: string): Promise<TavilyResult[]> {
   }
 }
 
-export const tavilySearchTool = new DynamicStructuredTool({
+const tavilySearchSchema = z.object({
+  query: z.string().describe('The search query to find events, e.g. "free family-friendly events in Austin this weekend 2026"'),
+})
+
+// @ts-expect-error -- DynamicStructuredTool + Zod generics cause TS2589 in strict tsc; runtime types are correct
+export const tavilySearchTool: DynamicStructuredTool = new DynamicStructuredTool({
   name: 'tavily_search',
   description: 'Search the web for community events, activities, and gatherings. Use this tool to find events in a specific city or matching specific criteria.',
-  schema: z.object({
-    query: z.string().describe('The search query to find events, e.g. "free family-friendly events in Austin this weekend 2026"'),
-  }),
-  func: async ({ query }) => {
+  schema: tavilySearchSchema,
+  func: async ({ query }: { query: string }) => {
     const results = await searchTavily(query)
     return JSON.stringify(results, null, 2)
   },

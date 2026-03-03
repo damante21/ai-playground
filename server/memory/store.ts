@@ -8,6 +8,7 @@ export async function getStore() {
     return store
   }
 
+  // @ts-expect-error -- subpath export requires moduleResolution: "node16" or "bundler"
   const storeModule = await import('@langchain/langgraph-checkpoint-postgres/store')
   const PostgresStore = storeModule.PostgresStore as {
     fromConnString(connString: string): { setup(): Promise<void> }
