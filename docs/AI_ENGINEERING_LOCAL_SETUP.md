@@ -68,7 +68,7 @@ ai-engineering/
 │   ├── main.tsx            # React root
 │   ├── App.tsx             # Router (/ → /ai-engineering)
 │   ├── tailwind.css        # Tailwind v4 entry
-│   ├── vite.config.ts      # Vite dev config with API proxy
+│   ├── vite.config.mts     # Vite dev config with API proxy (ESM)
 │   ├── tsconfig.server.json
 │   ├── tsconfig.client.json
 │   └── migrations/         # SQL migrations run on startup

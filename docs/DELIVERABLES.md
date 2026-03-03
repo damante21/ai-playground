@@ -107,7 +107,7 @@ flowchart TB
         subgraph LANGGRAPH["LangGraph Agent Orchestration"]
             direction TB
             Supervisor["Supervisor Node<br/>Claude Sonnet 4"]
-            Researchers["Researcher Nodes<br/>GPT-4o-mini"]
+            Researchers["Researcher Nodes<br/>GPT-4o-mini + bindTools"]
             RAGNode["RAG Retrieval Node"]
             Filter["Filter Node<br/>Claude Sonnet 4"]
             Categorizer["Categorizer Node<br/>GPT-4o-mini"]
@@ -156,7 +156,7 @@ flowchart TB
     subgraph EXTERNAL["External Services"]
         Anthropic["Anthropic API<br/>claude-sonnet-4-20250514"]
         OpenAI["OpenAI API<br/>gpt-4o-mini +<br/>text-embedding-3-small"]
-        Tavily["Tavily Search API<br/>(web event discovery)"]
+        Tavily["Tavily Search API<br/>(DynamicStructuredTool<br/>bound to researcher)"]
         Langfuse["Langfuse<br/>(experiments, scores,<br/>RAGAS tracking)"]
         LangSmith["LangSmith<br/>(agent trace<br/>observability)"]
     end
@@ -174,7 +174,7 @@ flowchart TB
 
     Supervisor --> Anthropic
     Researchers --> OpenAI
-    Researchers --> Tavily
+    Researchers -->|"tool call"| Tavily
     Filter --> Anthropic
     Categorizer --> OpenAI
     MultiQ --> Anthropic
@@ -204,7 +204,7 @@ flowchart TB
 
 1. **LLM(s):** OpenAI `gpt-4o-mini` handles cost-sensitive high-volume worker tasks while Anthropic Claude Sonnet handles complex supervisor/filter reasoning where precision matters most.
 2. **Agent orchestration framework:** LangGraph.js provides explicit node/edge/state control for supervisor-researcher decomposition and iterative routing.
-3. **Tool(s):** Tavily Search API gives broad web coverage of event sources and returns structured enough outputs for downstream filtering.
+3. **Tool(s):** Tavily Search API is wrapped as a `DynamicStructuredTool` with a Zod schema and bound to the researcher model via `bindTools()`, giving the LLM autonomous control over when and how to search.
 4. **Embedding model:** `text-embedding-3-small` offers good quality-cost tradeoff for venue/event semantic retrieval.
 5. **Vector database:** PostgreSQL + pgvector reuses existing infrastructure while supporting semantic nearest-neighbor retrieval.
 6. **Monitoring tool:** LangSmith is used for full execution tracing, node latency/cost visibility, and debugging.
@@ -224,7 +224,7 @@ flowchart TB
 #### Agent Components
 
 - Supervisor node: decomposes query into platform-specific research tasks and controls iteration depth.
-- Researcher nodes: execute parallel searches across event sources using Tavily.
+- Researcher nodes: LLM with `tavily_search` tool bound via `bindTools()`. The model autonomously decides when and how to search, can call the tool multiple times per turn, and synthesizes results into structured events.
 - Filter node: applies values-based reasoning and combines raw results with retrieved RAG context.
 - Categorizer node: groups accepted events into user-facing categories.
 - Control flow: conditional routing lets supervisor continue research or proceed to filtering based on evidence quality/quantity.
@@ -401,12 +401,12 @@ Multi-Query retrieval achieved perfect faithfulness (1.0 vs 0.993 naive) while m
 docker-compose up --build
 
 # Run baseline evaluation (naive retriever)
-cd apps/ai-engineering && npx ts-node server/eval/runEval.ts naive
+npm run eval:naive
 
 # Run comparison evaluations
-cd apps/ai-engineering && npx ts-node server/eval/runEval.ts bm25
-cd apps/ai-engineering && npx ts-node server/eval/runEval.ts multiQuery
-cd apps/ai-engineering && npx ts-node server/eval/runEval.ts hybrid
+npm run eval:bm25
+npm run eval:multiQuery
+npm run eval:hybrid
 
 # View eval dashboard
 # Navigate to http://localhost:3000/ai-engineering/eval

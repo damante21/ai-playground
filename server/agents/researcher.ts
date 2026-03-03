@@ -1,7 +1,10 @@
 import { ChatOpenAI } from '@langchain/openai'
 import { AIMessage } from '@langchain/core/messages'
+import { HumanMessage, ToolMessage } from '@langchain/core/messages'
 import { GraphState, type GraphStateType, type RawEvent } from './state'
-import { tavilySearch } from '../tools/tavily'
+import { tavilySearchTool } from '../tools/tavily'
+
+const MAX_TOOL_ROUNDS = 3
 
 function createResearcherModel(): ChatOpenAI {
   return new ChatOpenAI({
@@ -10,31 +13,62 @@ function createResearcherModel(): ChatOpenAI {
   })
 }
 
-async function executeResearch(query: string, city: string): Promise<RawEvent[]> {
-  const results = await tavilySearch(query)
+function getResearcherSystemPrompt(): string {
+  const now = new Date()
+  const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
 
-  const model = createResearcherModel()
-  const response = await model.invoke([
-    {
-      role: 'system',
-      content: `You are a research assistant parsing web search results for community events. Extract structured event data from the search results. Only include results that are actual events (not articles about events, not venue listings without specific events). Return a JSON array of events.
+  return `You are a research assistant that finds community events. Today's date is ${dateStr}.
 
-Today's date is ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}. Only include events that have not yet occurred. Discard any event whose date is clearly in the past.
+You have access to a web search tool. Use it to search for events matching the user's criteria. You may call the tool multiple times with different queries to get broader coverage.
 
-Each event should have: title, description, date (best guess if not explicit), url, source (website name), venue (if mentioned), city.
+After gathering search results, synthesize them into a JSON array of events. Only include results that are actual events (not articles, not venue listings). Only include events that have not yet occurred.
 
-If a result is not an event, skip it. If you cannot find any events, return an empty array.
+Each event object must have: title, description, date, url, source (website name), venue (if mentioned), city.
 
-Respond with ONLY a JSON array, no other text.`,
-    },
-    {
-      role: 'user',
-      content: `City: ${city}\nSearch results:\n${JSON.stringify(results, null, 2)}`,
-    },
-  ])
+When you are done searching, respond with ONLY a JSON array of events. No other text.`
+}
+
+async function executeResearch(queries: string[], city: string): Promise<RawEvent[]> {
+  const model = createResearcherModel().bindTools([tavilySearchTool])
+
+  const userContent = `Search for community events in ${city}. Here are suggested search queries to try:\n${queries.map((q, i) => `${i + 1}. ${q}`).join('\n')}\n\nUse the tavily_search tool to search for events, then compile the results into a JSON array.`
+
+  const messages: Array<HumanMessage | AIMessage | ToolMessage> = [
+    new HumanMessage(userContent),
+  ]
+
+  for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+    const response = await model.invoke([
+      { role: 'system', content: getResearcherSystemPrompt() },
+      ...messages,
+    ])
+
+    messages.push(response)
+
+    const toolCalls = response.tool_calls
+    if (!toolCalls || toolCalls.length === 0) {
+      break
+    }
+
+    for (const tc of toolCalls) {
+      const result = await tavilySearchTool.invoke(tc.args)
+      messages.push(new ToolMessage({
+        content: typeof result === 'string' ? result : JSON.stringify(result),
+        tool_call_id: tc.id ?? '',
+      }))
+    }
+  }
+
+  const lastAI = [...messages].reverse().find(m => m instanceof AIMessage)
+  if (!lastAI) return []
+
+  const content = typeof lastAI.content === 'string'
+    ? lastAI.content
+    : Array.isArray(lastAI.content)
+      ? lastAI.content.map(block => ('text' in block ? block.text : '')).join('')
+      : ''
 
   try {
-    const content = typeof response.content === 'string' ? response.content : ''
     const jsonMatch = content.match(/\[[\s\S]*\]/)
     if (!jsonMatch) return []
     const parsed = JSON.parse(jsonMatch[0]) as RawEvent[]
@@ -50,16 +84,12 @@ export async function researcherNode(
   const queries = state.searchQueries
   const city = state.userFilters?.city ?? 'Unknown'
 
-  const results = await Promise.all(
-    queries.map(query => executeResearch(query, city))
-  )
-
-  const allEvents = results.flat()
+  const allEvents = await executeResearch(queries, city)
 
   return {
     rawEvents: allEvents,
     messages: [
-      new AIMessage(`Found ${allEvents.length} potential events across ${queries.length} searches.`),
+      new AIMessage(`Found ${allEvents.length} potential events across tool-assisted searches.`),
     ],
     status: 'filtering',
   }

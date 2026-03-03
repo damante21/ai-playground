@@ -3,13 +3,13 @@
   "version": "1.0.0",
   "private": true,
   "description": "AI Powered Event Sourcer - agentic event discovery with values-based filtering",
-  "type": "module",
+
   "engines": {
     "node": ">=20"
   },
   "scripts": {
     "dev:server": "tsx standalone/server.ts",
-    "dev:client": "vite --config standalone/vite.config.ts",
+    "dev:client": "vite --config standalone/vite.config.mts",
     "ingest": "tsx server/rag/ingest.ts",
     "eval:naive": "tsx server/eval/runEval.ts naive",
     "eval:bm25": "tsx server/eval/runEval.ts bm25",

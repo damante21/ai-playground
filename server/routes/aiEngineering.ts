@@ -292,7 +292,7 @@ router.get('/eval/results', requireAIEngineeringAuth, async (_req: Request, res:
 router.get('/eval/dataset', requireAIEngineeringAuth, async (_req: Request, res: Response) => {
   try {
     const { goldenDataset } = await import('../eval/goldenDataset')
-    const items = (goldenDataset as Array<{
+    const items = (goldenDataset as unknown as Array<{
       input: { userQuery: string; userFilters: Record<string, unknown>; rawEvents: Array<{ title: string }> }
       expectedOutput: { relevantHeuristicCategories: string[]; expectedPassTitles: string[]; expectedRejectTitles: string[]; groundTruthReasoning: string }
     }>).map((item, index) => {
