@@ -5,8 +5,8 @@ This document is the final written submission for the certification challenge.
 - Public repo: `https://github.com/damante21/ai-playground`
 - Demo URL (local): `http://localhost:3000/ai-engineering`
 - Demo URL (public): `https://jamesdamante.com/ai-engineering`
-- Loom demo URL (<= 5 min): `<ADD_LOOM_URL>`
-- Loom runtime: `<ADD_RUNTIME>`
+- Loom demo URL (<= 5 min): `https://www.loom.com/share/4fe5a006cd9348499c9ed68b452531c6`
+- Loom runtime: `~5 min`
 - Last updated: `2026-03-02`
 
 ---
@@ -16,7 +16,7 @@ This document is the final written submission for the certification challenge.
 ### Global Requirements
 
 - [x] Public GitHub repo link included
-- [ ] Loom video <= 5 minutes included
+- [x] Loom video <= 5 minutes included
 - [x] Written document addresses all deliverables
 - [x] All relevant code in repo
 - [x] Local setup docs present:
@@ -62,8 +62,8 @@ For newcomers, the problem is worse because they lack local context about venues
 | 4 | "I just moved to Austin. Find safe beginner social events." | Returns newcomer-appropriate categories with clear rationale and risk-aware filtering. |
 | 5 | "Give me learning-focused events under free only." | Prioritizes Learning category, enforces free constraint. |
 | 6 | "These look too broad. Show stricter matches only." | Applies tighter filtering threshold and returns fewer, higher-confidence events. |
-| 7 | "Save these preferences for next time." | Persists preference profile to long-term memory namespace. |
-| 8 | "Use my saved preferences and search Seattle." | Loads saved preferences and runs query with city changed. |
+| 7 | "Save these preferences for next time." | *(Planned enhancement)* Would persist preference profile to cross-thread memory namespace via PostgresStore. |
+| 8 | "Use my saved preferences and search Seattle." | *(Planned enhancement)* Would load saved preferences from store and run query with city changed. |
 | 9 | "Why did this event pass the filter?" | Provides one-line grounded explanation tied to retrieved context. |
 | 10 | "Compare this to raw Eventbrite results." | Shows filtered set quality vs broad source listings (manually in demo/workflow). |
 
@@ -75,7 +75,7 @@ For newcomers, the problem is worse because they lack local context about venues
 
 AI Powered Event Sourcer is an agentic event discovery application that accepts a city plus values-based constraints (for example: free, alcohol-free, secular, apolitical, family-friendly). The UX is a focused search interface that returns categorized event recommendations in 30-60 seconds, where each event includes source, date/time, confidence score, and a brief explanation of why it matches user criteria. The system is designed to feel like a trusted local researcher that pre-vets options instead of forcing users to manually inspect many low-signal listings.
 
-The backend uses a supervisor-researcher pattern: a supervisor agent decomposes the request into parallel research tasks, researcher agents gather candidate events via Tavily, a filter agent applies values-based reasoning with RAG context, and a categorization agent organizes final outputs. The application is implemented in TypeScript using LangGraph.js and LangChain.js, with OpenAI + Anthropic model roles split by cost/reasoning profile. It includes in-thread memory for conversational refinement and cross-thread memory for saved preferences.
+The backend uses a supervisor-researcher pattern: a supervisor agent decomposes the request into parallel research tasks, researcher agents gather candidate events via Tavily, a filter agent applies values-based reasoning with RAG context, and a categorization agent organizes final outputs. The application is implemented in TypeScript using LangGraph.js and LangChain.js, with OpenAI + Anthropic model roles split by cost/reasoning profile. Memory infrastructure (PostgresSaver for in-thread state, PostgresStore for cross-thread preferences) is wired and connected but not yet surfaced as a user-facing feature — each request currently operates statelessly, which is sufficient for the core event discovery use case.
 
 ### 2.2 Infrastructure Diagram + Tooling Rationale (7 pts)
 
@@ -132,9 +132,9 @@ flowchart TB
             Registry --> Hybrid
         end
 
-        subgraph MEMORY["Memory Layer"]
-            Checkpointer["PostgresSaver<br/>(in-thread conversation state)"]
-            Store["PostgresStore<br/>(cross-thread preferences)"]
+        subgraph MEMORY["Memory Layer (infrastructure wired)"]
+            Checkpointer["PostgresSaver<br/>(in-thread — connected,<br/>enhancement pending)"]
+            Store["PostgresStore<br/>(cross-thread — connected,<br/>enhancement pending)"]
         end
 
         subgraph EVAL["Evaluation Pipeline"]
@@ -278,16 +278,16 @@ At query time, the supervisor creates parallel research tasks and researcher age
   - [x] RAG context retrieval
   - [x] Multi-agent orchestration
   - [x] Categorized output
-  - [x] Memory behavior (thread + saved preferences)
+  - [x] Memory infrastructure wired (PostgresSaver + PostgresStore connected; user-facing memory is a planned enhancement)
 
 ### 4.2 Demo Evidence
 
-- Loom URL: `<ADD_LOOM_URL>`
-- Loom runtime: `<ADD_RUNTIME_UNDER_5_MIN>`
+- Loom URL: `https://www.loom.com/share/4fe5a006cd9348499c9ed68b452531c6`
+- Loom runtime: `~5 min`
 - What is shown in demo:
-  - `<ADD — e.g. Secret key gate, city + filter query, categorized results with match explanations>`
-  - `<ADD — e.g. Follow-up refinement query within same thread>`
-  - `<ADD — e.g. Eval dashboard with baseline + comparison metrics>`
+  - Secret key gate authentication
+  - City + filter query with categorized results, confidence scores, and match explanations
+  - RAGAS evaluation dashboard with retriever comparison table and per-test-case golden dataset results
 
 ---
 
@@ -415,7 +415,7 @@ npm run eval:hybrid
 ### B) Links and IDs
 
 - Public repo: `https://github.com/damante21/ai-playground`
-- Loom URL: `<ADD_LOOM_URL>`
+- Loom URL: `https://www.loom.com/share/4fe5a006cd9348499c9ed68b452531c6`
 - Baseline experiment: `RAGAS Baseline - Naive Retriever` (2026-02-27)
 - Comparison experiments: `RAGAS Eval - Naive (pgvector)`, `RAGAS Eval - BM25 (tsvector)`, `RAGAS Eval - Multi-Query`, `RAGAS Eval - Hybrid (RRF)` (all 2026-03-01)
 - Dataset: 15-item golden test set (in `server/eval/goldenDataset.ts`)
@@ -437,6 +437,6 @@ npm run eval:hybrid
 - [x] All four required metrics shown in Task 5 and Task 6
 - [x] Evaluator config names included exactly
 - [x] Evaluator evidence included (source code + raw experiment data in repo)
-- [ ] Loom <= 5 minutes and linked
+- [x] Loom <= 5 minutes and linked
 - [ ] Public repo links and run instructions verified
 
