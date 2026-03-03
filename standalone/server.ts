@@ -79,6 +79,11 @@ async function main(): Promise<void> {
   app.use(cors())
   app.use(express.json())
 
+  app.use((req, _res, next) => {
+    console.log(`${req.method} ${req.path}`)
+    next()
+  })
+
   app.use('/api/ai-engineering', aiEngineeringRoutes)
 
   app.get('/health', (_req, res) => {
