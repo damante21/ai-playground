@@ -1,7 +1,8 @@
 import { tavily } from '@tavily/core'
 import { ChatOpenAI } from '@langchain/openai'
 import { z } from 'zod'
-import { getSharedDeps } from '../shared'
+import type { Updateable } from 'kysely'
+import { getSharedDeps, type AIEngineeringSavedEventsTable } from '../shared'
 
 const EnrichedEventSchema = z.object({
   startTime: z.string().nullish().describe('ISO 8601 datetime of event start'),
@@ -17,8 +18,6 @@ const EnrichedEventSchema = z.object({
   imageUrl: z.string().nullish(),
   tags: z.array(z.string()).default([]),
 })
-
-type EnrichedEventData = z.infer<typeof EnrichedEventSchema>
 
 /**
  * Fetches the event page via Tavily extract and uses an LLM to
@@ -83,17 +82,17 @@ export async function enrichEvent(eventId: string): Promise<void> {
     const parsed = EnrichedEventSchema.parse(JSON.parse(jsonMatch[0]))
     const enrichmentData = parsed as unknown as Record<string, unknown>
 
-    const updates: Record<string, unknown> = {
+    const updates: Updateable<AIEngineeringSavedEventsTable> = {
       enrichment_data: JSON.stringify(enrichmentData),
       enriched_at: new Date(),
     }
 
-    if (parsed.startTime) updates['start_time'] = new Date(parsed.startTime)
-    if (parsed.endTime) updates['end_time'] = new Date(parsed.endTime)
-    if (parsed.venueName) updates['venue_name'] = parsed.venueName
-    if (parsed.venueAddress) updates['venue_address'] = parsed.venueAddress
+    if (parsed.startTime) updates.start_time = new Date(parsed.startTime)
+    if (parsed.endTime) updates.end_time = new Date(parsed.endTime)
+    if (parsed.venueName) updates.venue_name = parsed.venueName
+    if (parsed.venueAddress) updates.venue_address = parsed.venueAddress
     if (parsed.description && (!event.description || event.description.length < 50)) {
-      updates['description'] = parsed.description
+      updates.description = parsed.description
     }
 
     await db

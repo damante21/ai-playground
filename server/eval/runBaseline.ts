@@ -34,6 +34,9 @@ interface FilterNodeResult {
 function buildMinimalState(input: EvalInput): GraphStateType {
   return {
     messages: [],
+    userId: null,
+    preferenceContext: null,
+    episodicContext: null,
     userQuery: input.userQuery,
     userFilters: input.userFilters,
     searchQueries: [],
@@ -42,6 +45,7 @@ function buildMinimalState(input: EvalInput): GraphStateType {
     rejectedEvents: [],
     categorizedEvents: {},
     retrievedContext: null,
+    refinementCriteria: null,
     status: 'filtering',
     summary: '',
   }

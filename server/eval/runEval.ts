@@ -23,13 +23,14 @@ import {
   ragasAggregator,
 } from './ragasEvaluators'
 
-const VALID_RETRIEVERS: RetrieverType[] = ['naive', 'bm25', 'multiQuery', 'hybrid']
+const VALID_RETRIEVERS: RetrieverType[] = ['naive', 'bm25', 'multiQuery', 'hybrid', 'ensemble']
 
 const RETRIEVER_LABELS: Record<RetrieverType, string> = {
   naive: 'Naive (pgvector)',
   bm25: 'BM25 (tsvector)',
   multiQuery: 'Multi-Query',
   hybrid: 'Hybrid (RRF)',
+  ensemble: 'Ensemble (Weighted RRF)',
 }
 
 interface RetrievalNodeResult {
@@ -44,6 +45,9 @@ interface FilterNodeResult {
 function buildMinimalState(input: EvalInput): GraphStateType {
   return {
     messages: [],
+    userId: null,
+    preferenceContext: null,
+    episodicContext: null,
     userQuery: input.userQuery,
     userFilters: input.userFilters,
     searchQueries: [],
@@ -52,6 +56,7 @@ function buildMinimalState(input: EvalInput): GraphStateType {
     rejectedEvents: [],
     categorizedEvents: {},
     retrievedContext: null,
+    refinementCriteria: null,
     status: 'filtering',
     summary: '',
   }

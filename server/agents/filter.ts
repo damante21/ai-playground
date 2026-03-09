@@ -81,7 +81,7 @@ export async function filterNode(
       filteredEvents: [],
       status: isRefinement ? 'complete' : 'categorizing',
       messages: [new AIMessage(msg)],
-      summary: isRefinement ? msg : undefined,
+      ...(isRefinement ? { summary: msg } : {}),
     }
   }
 

@@ -2,7 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express'
 import { body, validationResult } from 'express-validator'
 import { getSharedDeps } from '../shared'
 
-const router = Router()
+const router: Router = Router()
 
 function getSecretKey(): string {
   const key = process.env['AI_ENGINEERING_SECRET_KEY']

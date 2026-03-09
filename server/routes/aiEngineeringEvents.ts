@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express'
 import { body, query, validationResult } from 'express-validator'
-import { getSharedDeps } from '../shared'
+import type { Updateable } from 'kysely'
+import { getSharedDeps, type AIEngineeringSavedEventsTable } from '../shared'
 import { enrichEvent } from '../agents/enrichment'
 import { generateBriefing } from '../agents/briefing'
 import { recordEventSaved } from '../memory/preferences'
 import { recordEpisode } from '../memory/episodes'
 
-const router = Router()
+const router: Router = Router()
 
 type EventStatus = 'interested' | 'going' | 'attended' | 'skipped'
 const VALID_STATUSES: EventStatus[] = ['interested', 'going', 'attended', 'skipped']
@@ -57,7 +58,7 @@ router.post('/', [
         match_explanation: req.body.matchExplanation ?? null,
         source_thread_id: req.body.sourceThreadId ?? null,
         status: 'interested',
-      } as Record<string, unknown>)
+      })
       .returning([
         'id', 'title', 'description', 'event_url', 'venue_name', 'venue_address',
         'start_time', 'end_time', 'category', 'is_free', 'confidence_score',
@@ -156,9 +157,9 @@ router.patch('/:id', [
     return
   }
 
-  const updates: Record<string, unknown> = {}
-  if (req.body.status) updates['status'] = req.body.status
-  if (req.body.notes !== undefined) updates['notes'] = req.body.notes
+  const updates: Updateable<AIEngineeringSavedEventsTable> = {}
+  if (req.body.status) updates.status = req.body.status
+  if (req.body.notes !== undefined) updates.notes = req.body.notes
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: 'No valid fields to update' })
