@@ -102,6 +102,26 @@ export async function verifyAuth(): Promise<boolean> {
   }
 }
 
+/**
+ * Attempt auto-login via the standalone /auth/auto endpoint.
+ * Returns true if the server supports it (AUTH_DISABLED mode).
+ * Returns false (silently) in production where the endpoint doesn't exist.
+ */
+export async function autoLogin(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_BASE}/auth/auto`)
+    if (!res.ok) return false
+    const data = await res.json() as { success: boolean; token: string; user: AuthUser }
+    if (data.success && data.token) {
+      storeAuth(data.token, data.user)
+      return true
+    }
+    return false
+  } catch {
+    return false
+  }
+}
+
 export interface EventData {
   title: string
   description: string

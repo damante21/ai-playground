@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { isAuthenticated, verifyAuth } from '../lib/api'
+import { isAuthenticated, verifyAuth, autoLogin } from '../lib/api'
 import AuthGate from '../components/AuthGate'
 import ChatInterface from '../components/ChatInterface'
 
@@ -8,14 +8,16 @@ export default function AIEngineeringPage() {
   const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    if (isAuthenticated()) {
-      verifyAuth().then(valid => {
-        setAuthed(valid)
-        setChecking(false)
-      })
-    } else {
+    async function checkAuth() {
+      if (isAuthenticated()) {
+        const valid = await verifyAuth()
+        if (valid) { setAuthed(true); setChecking(false); return }
+      }
+      const auto = await autoLogin()
+      if (auto) { setAuthed(true) }
       setChecking(false)
     }
+    checkAuth()
   }, [])
 
   useEffect(() => {

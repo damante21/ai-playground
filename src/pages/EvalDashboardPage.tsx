@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { isAuthenticated, verifyAuth, fetchEvalResults, fetchEvalDataset } from '../lib/api'
+import { isAuthenticated, verifyAuth, autoLogin, fetchEvalResults, fetchEvalDataset } from '../lib/api'
 import type { EvalResultsResponse, EvalDatasetResponse, EvalRun, AgentEvalData } from '../lib/api'
 import AuthGate from '../components/AuthGate'
 import EvalHeader from '../components/eval/EvalHeader'
@@ -154,14 +154,16 @@ export default function EvalDashboardPage() {
   const [selectedRetriever, setSelectedRetriever] = useState<string | null>(null)
 
   useEffect(() => {
-    if (isAuthenticated()) {
-      verifyAuth().then(valid => {
-        setAuthed(valid)
-        setChecking(false)
-      })
-    } else {
+    async function checkAuth() {
+      if (isAuthenticated()) {
+        const valid = await verifyAuth()
+        if (valid) { setAuthed(true); setChecking(false); return }
+      }
+      const auto = await autoLogin()
+      if (auto) { setAuthed(true) }
       setChecking(false)
     }
+    checkAuth()
   }, [])
 
   useEffect(() => {

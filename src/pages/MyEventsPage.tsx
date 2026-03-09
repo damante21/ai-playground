@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import {
   isAuthenticated,
   verifyAuth,
+  autoLogin,
   clearAuth,
   fetchSavedEvents,
   updateEvent,
@@ -39,14 +40,16 @@ export default function MyEventsPage() {
   const [activeTab, setActiveTab] = useState<FilterTab>('all')
 
   useEffect(() => {
-    if (isAuthenticated()) {
-      verifyAuth().then(valid => {
-        setAuthed(valid)
-        setChecking(false)
-      })
-    } else {
+    async function checkAuth() {
+      if (isAuthenticated()) {
+        const valid = await verifyAuth()
+        if (valid) { setAuthed(true); setChecking(false); return }
+      }
+      const auto = await autoLogin()
+      if (auto) { setAuthed(true) }
       setChecking(false)
     }
+    checkAuth()
   }, [])
 
   useEffect(() => {
