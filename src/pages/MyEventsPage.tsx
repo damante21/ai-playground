@@ -111,16 +111,17 @@ export default function MyEventsPage() {
     <div className="min-h-screen bg-gray-950">
       <header className="border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold text-white">My Events</h1>
-            <p className="text-xs text-gray-500">Events you've saved from chat</p>
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-semibold text-white">My Events</h1>
+            <p className="text-xs text-gray-500 hidden sm:block">Events you've saved from chat</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => navigate('/ai-engineering')}
-              className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
+              className="text-xs px-2 sm:px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
             >
-              Back to Chat
+              <span className="hidden sm:inline">Back to Chat</span>
+              <span className="sm:hidden">&larr; Chat</span>
             </button>
             <button
               onClick={() => { clearAuth(); setAuthed(false) }}
@@ -241,11 +242,11 @@ function EventRow({
       : 'text-orange-400'
 
   return (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 hover:border-gray-700 transition-colors">
-      <div className="flex items-start gap-4">
+    <div className="bg-gray-900 border border-gray-800 rounded-lg p-3 sm:p-4 hover:border-gray-700 transition-colors">
+      <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <h3 className="text-white font-medium text-sm truncate">{event.title}</h3>
+          <div className="flex items-start gap-2 mb-1">
+            <h3 className="text-white font-medium text-sm leading-tight">{event.title}</h3>
             <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full border ${STATUS_COLORS[event.status]}`}>
               {STATUS_LABELS[event.status]}
             </span>
@@ -255,10 +256,10 @@ function EventRow({
             <p className="text-gray-400 text-xs mb-2 line-clamp-2">{event.description}</p>
           )}
 
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
+          <div className="flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 text-xs text-gray-500">
             <span>{dateStr}</span>
             {event.venue_name && <span>{event.venue_name}</span>}
-            {event.venue_address && <span>{event.venue_address}</span>}
+            {event.venue_address && <span className="hidden sm:inline">{event.venue_address}</span>}
             {event.category && (
               <span className="text-gray-600">{event.category}</span>
             )}
@@ -314,7 +315,7 @@ function EventRow({
           )}
         </div>
 
-        <div className="shrink-0 flex items-center gap-1">
+        <div className="shrink-0 flex items-center gap-1 border-t border-gray-800 pt-2 sm:border-0 sm:pt-0">
           {event.event_url && (
             <a
               href={event.event_url}

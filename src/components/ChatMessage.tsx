@@ -70,10 +70,10 @@ function EventCard({ event, threadId, userQuery }: { event: EventData; threadId?
         onClick={handleSave}
         disabled={saved || saving}
         title={saved ? 'Saved' : 'Save event'}
-        className={`absolute top-3 right-3 p-1.5 rounded-md transition-all ${
+        className={`absolute top-3 right-3 p-1.5 rounded-md transition-all flex items-center ${
           saved
             ? 'text-blue-400 cursor-default'
-            : 'text-gray-500 hover:text-white hover:bg-gray-700 opacity-0 group-hover:opacity-100'
+            : 'text-gray-500 hover:text-white hover:bg-gray-700 sm:opacity-0 sm:group-hover:opacity-100'
         }`}
       >
         {saving ? (
@@ -86,6 +86,7 @@ function EventCard({ event, threadId, userQuery }: { event: EventData; threadId?
             <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
           </svg>
         )}
+        <span className="sm:hidden text-xs ml-1">{saved ? 'Saved' : 'Save'}</span>
       </button>
     </div>
   )

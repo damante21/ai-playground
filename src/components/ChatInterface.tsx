@@ -12,6 +12,7 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
   const navigate = useNavigate()
   const { messages, isLoading, error, sendMessage, clearMessages, threadId } = useChat()
   const [input, setInput] = useState('')
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
@@ -41,24 +42,24 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
   const hasMessages = messages.length > 0
 
   const inputBar = (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto w-full px-4 py-3">
-      <div className="flex items-end gap-3">
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto w-full px-2 sm:px-4 py-3">
+      <div className="flex items-end gap-2 sm:gap-3">
         <textarea
           ref={inputRef}
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
-          placeholder="Describe the events you're looking for..."
+          placeholder="Describe the events you're looking for and where"
           rows={1}
-          className="flex-1 resize-none px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="flex-1 min-w-0 resize-none px-3 sm:px-4 py-3 bg-gray-800 border border-gray-700 rounded-xl text-white text-sm placeholder-gray-500 placeholder:text-center focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           disabled={isLoading}
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="px-5 py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="shrink-0 px-4 sm:px-5 py-3 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
         >
-          Send
+          Find
         </button>
       </div>
     </form>
@@ -70,10 +71,29 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
       <header className="shrink-0 border-b border-gray-800 bg-gray-900/80 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-semibold text-white">AI Powered Event Sourcer</h1>
-            <p className="text-xs text-gray-500">AI-powered community event discovery</p>
+            <h1 className="text-base sm:text-lg font-semibold text-white">AI Powered Event Sourcer</h1>
+            <p className="text-xs text-gray-500 hidden sm:block">AI-powered community event discovery</p>
           </div>
-          <div className="flex items-center gap-3">
+
+          {/* Mobile hamburger */}
+          <div className="md:hidden">
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="text-white p-2 focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                {isMobileMenuOpen ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                )}
+              </svg>
+            </button>
+          </div>
+
+          {/* Desktop nav */}
+          <div className="hidden md:flex items-center gap-3">
             <button
               onClick={() => navigate('/ai-engineering/my-events')}
               className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
@@ -100,6 +120,36 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
             </button>
           </div>
         </div>
+
+        {/* Mobile dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden border-t border-gray-800 px-4 py-3 space-y-2">
+            <button
+              onClick={() => { navigate('/ai-engineering/my-events'); setIsMobileMenuOpen(false) }}
+              className="w-full text-left text-sm px-3 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
+            >
+              My Events
+            </button>
+            <button
+              onClick={() => { navigate('/ai-engineering/eval'); setIsMobileMenuOpen(false) }}
+              className="w-full text-left text-sm px-3 py-2 bg-gray-800 border border-gray-700 text-gray-300 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
+            >
+              Eval Dashboard
+            </button>
+            <button
+              onClick={() => { clearMessages(); setIsMobileMenuOpen(false) }}
+              className="w-full text-left text-sm px-3 py-2 text-gray-400 hover:text-white transition-colors"
+            >
+              Clear chat
+            </button>
+            <button
+              onClick={() => { handleLogout(); setIsMobileMenuOpen(false) }}
+              className="w-full text-left text-sm px-3 py-2 text-gray-400 hover:text-red-400 transition-colors"
+            >
+              Logout
+            </button>
+          </div>
+        )}
       </header>
 
       {!hasMessages ? (
@@ -110,7 +160,7 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
             <p className="text-gray-400 text-sm max-w-md mx-auto mb-6">
               Tell me your city and what matters to you — free, alcohol-free, family-friendly, secular, or anything else. I'll search across event platforms and find what fits.
             </p>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center gap-2">
               {[
                 'Free family-friendly events in San Francisco',
                 'Secular outdoor activities in Austin',
@@ -122,7 +172,7 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
                     setInput(suggestion)
                     inputRef.current?.focus()
                   }}
-                  className="text-xs px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-300 hover:border-gray-600 hover:text-white transition-colors"
+                  className="text-xs px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg text-gray-300 hover:border-gray-600 hover:text-white transition-colors text-left sm:text-center"
                 >
                   {suggestion}
                 </button>
