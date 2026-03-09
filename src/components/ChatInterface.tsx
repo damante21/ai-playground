@@ -10,7 +10,7 @@ interface ChatInterfaceProps {
 
 export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
   const navigate = useNavigate()
-  const { messages, isLoading, error, sendMessage, clearMessages } = useChat()
+  const { messages, isLoading, error, sendMessage, clearMessages, threadId } = useChat()
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -75,6 +75,12 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
           </div>
           <div className="flex items-center gap-3">
             <button
+              onClick={() => navigate('/ai-engineering/my-events')}
+              className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
+            >
+              My Events
+            </button>
+            <button
               onClick={() => navigate('/ai-engineering/eval')}
               className="text-xs px-3 py-1.5 bg-gray-800 border border-gray-700 text-gray-400 rounded-lg hover:border-gray-600 hover:text-white transition-colors"
             >
@@ -130,9 +136,16 @@ export default function ChatInterface({ onLogout }: ChatInterfaceProps) {
         <>
           <div className="flex-1 overflow-y-auto">
             <div className="max-w-3xl mx-auto px-4 py-6 space-y-4">
-              {messages.map(msg => (
-                <ChatMessage key={msg.id} message={msg} />
-              ))}
+              {messages.map((msg, idx) => {
+                let precedingUserQuery: string | undefined
+                if (msg.role === 'assistant' && idx > 0) {
+                  const prev = messages[idx - 1]
+                  if (prev?.role === 'user') precedingUserQuery = prev.content
+                }
+                return (
+                  <ChatMessage key={msg.id} message={msg} threadId={threadId} userQuery={precedingUserQuery} />
+                )
+              })}
 
               {isLoading && (
                 <div className="flex justify-start">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { isAuthenticated, fetchEvalResults, fetchEvalDataset } from '../lib/api'
-import type { EvalResultsResponse, EvalDatasetResponse, EvalRun } from '../lib/api'
-import SecretKeyGate from '../components/SecretKeyGate'
+import { isAuthenticated, verifyAuth, fetchEvalResults, fetchEvalDataset } from '../lib/api'
+import type { EvalResultsResponse, EvalDatasetResponse, EvalRun, AgentEvalData } from '../lib/api'
+import AuthGate from '../components/AuthGate'
 import EvalHeader from '../components/eval/EvalHeader'
 import MetricCard from '../components/eval/MetricCard'
 import ResultsTable from '../components/eval/ResultsTable'
@@ -14,10 +14,139 @@ const RETRIEVER_LABELS: Record<string, string> = {
   hybrid: 'Hybrid',
 }
 
+const AGENT_METRIC_LABELS: Record<string, string> = {
+  tool_call_accuracy: 'Tool Call Accuracy',
+  agent_goal_accuracy: 'Agent Goal Accuracy',
+  topic_adherence: 'Topic Adherence',
+}
+
+const ROUTING_COLORS: Record<string, string> = {
+  search: 'text-blue-400',
+  refinement: 'text-amber-400',
+  direct_response: 'text-gray-400',
+}
+
+function AgentEvalSection({ data }: { data: AgentEvalData }) {
+  const [expandedRow, setExpandedRow] = useState<number | null>(null)
+
+  return (
+    <div className="space-y-6">
+      <div className="border-t border-gray-800 pt-8">
+        <h2 className="text-lg font-semibold text-gray-200 mb-1">Agent Evaluation</h2>
+        <p className="text-sm text-gray-500 mb-6">
+          Supervisor routing, goal accuracy, and topic adherence across {data.experiment.testCases} test scenarios
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {data.metrics.map(metric => (
+          <MetricCard key={metric.name} metric={{ ...metric, name: AGENT_METRIC_LABELS[metric.name] ?? metric.name }} />
+        ))}
+      </div>
+
+      <section className="bg-gray-900 border border-gray-800 rounded-xl p-5">
+        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-3">
+          Experiment Details
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+          <div>
+            <p className="text-gray-500 text-xs">Experiment</p>
+            <p className="text-gray-200">{data.experiment.name}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Model</p>
+            <p className="text-gray-200">{data.experiment.model}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Run Timestamp</p>
+            <p className="text-gray-200">
+              {data.experiment.runTimestamp
+                ? new Date(data.experiment.runTimestamp).toLocaleString()
+                : 'N/A'}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-sm font-medium text-gray-400 uppercase tracking-wide mb-4">
+          Per-Test-Case Results
+          <span className="ml-2 text-gray-600 normal-case">
+            ({data.items.length} items)
+          </span>
+        </h2>
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-800 text-gray-500 text-xs uppercase tracking-wide">
+                  <th className="py-3 px-4 text-left">User Message</th>
+                  <th className="py-3 px-4 text-center">Routing</th>
+                  <th className="py-3 px-4 text-center">Tool Call</th>
+                  <th className="py-3 px-4 text-center">Goal</th>
+                  <th className="py-3 px-4 text-center">Topic</th>
+                </tr>
+              </thead>
+              <tbody>
+                {data.items.map((item, i) => {
+                  const isExpanded = expandedRow === i
+                  return (
+                    <tr
+                      key={i}
+                      className="border-b border-gray-800/50 cursor-pointer hover:bg-gray-800/30 transition-colors"
+                      onClick={() => setExpandedRow(isExpanded ? null : i)}
+                    >
+                      <td className="py-3 px-4">
+                        <p className="text-gray-300 truncate max-w-xs">{item.userMessage}</p>
+                        {isExpanded && (
+                          <div className="mt-2 space-y-1 text-xs">
+                            <p className="text-gray-500">
+                              Actual routing: <span className={ROUTING_COLORS[item.actualRouting] ?? 'text-gray-300'}>{item.actualRouting}</span>
+                            </p>
+                            {item.city && <p className="text-gray-500">City: <span className="text-gray-300">{item.city}</span></p>}
+                            {item.searchQueries.length > 0 && (
+                              <p className="text-gray-500">Queries: <span className="text-gray-300">{item.searchQueries.join('; ')}</span></p>
+                            )}
+                            {Object.entries(item.comments).map(([metric, comment]) => (
+                              <p key={metric} className="text-gray-600">
+                                <span className="text-gray-500">{AGENT_METRIC_LABELS[metric] ?? metric}:</span> {comment}
+                              </p>
+                            ))}
+                          </div>
+                        )}
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <span className={`text-xs font-mono ${ROUTING_COLORS[item.actualRouting] ?? 'text-gray-300'}`}>
+                          {item.actualRouting}
+                        </span>
+                      </td>
+                      {(['tool_call_accuracy', 'agent_goal_accuracy', 'topic_adherence'] as const).map(metric => {
+                        const val = item.scores[metric]
+                        const pct = val != null ? Math.round(val * 100) : null
+                        const color = pct == null ? 'text-gray-600' : pct >= 80 ? 'text-green-400' : pct >= 50 ? 'text-yellow-400' : 'text-red-400'
+                        return (
+                          <td key={metric} className="py-3 px-4 text-center">
+                            <span className={`font-mono ${color}`}>{pct != null ? `${pct}%` : '—'}</span>
+                          </td>
+                        )
+                      })}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 type LoadState = 'idle' | 'loading' | 'loaded' | 'error'
 
 export default function EvalDashboardPage() {
   const [authed, setAuthed] = useState(false)
+  const [checking, setChecking] = useState(true)
   const [loadState, setLoadState] = useState<LoadState>('idle')
   const [error, setError] = useState<string | null>(null)
   const [results, setResults] = useState<EvalResultsResponse | null>(null)
@@ -25,7 +154,14 @@ export default function EvalDashboardPage() {
   const [selectedRetriever, setSelectedRetriever] = useState<string | null>(null)
 
   useEffect(() => {
-    setAuthed(isAuthenticated())
+    if (isAuthenticated()) {
+      verifyAuth().then(valid => {
+        setAuthed(valid)
+        setChecking(false)
+      })
+    } else {
+      setChecking(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -68,8 +204,16 @@ export default function EvalDashboardPage() {
     }
   }, [authed, loadState, loadData])
 
+  if (checking) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-950">
+        <div className="text-gray-400 text-sm">Loading...</div>
+      </div>
+    )
+  }
+
   if (!authed) {
-    return <SecretKeyGate onAuthenticated={() => setAuthed(true)} />
+    return <AuthGate onAuthenticated={() => setAuthed(true)} />
   }
 
   const runs = results?.runs ?? []
@@ -190,11 +334,15 @@ export default function EvalDashboardPage() {
           </>
         )}
 
-        {loadState === 'loaded' && runs.length === 0 && (
+        {loadState === 'loaded' && results?.agentEval && (
+          <AgentEvalSection data={results.agentEval} />
+        )}
+
+        {loadState === 'loaded' && runs.length === 0 && !results?.agentEval && (
           <div className="text-center py-20 text-gray-500">
             <p className="mb-2">No evaluation data found.</p>
             <p className="text-sm">
-              Run evaluations first: <code className="text-gray-400">npm run eval:all</code>
+              Run evaluations first: <code className="text-gray-400">docker compose exec server npm run eval:all</code>
             </p>
           </div>
         )}

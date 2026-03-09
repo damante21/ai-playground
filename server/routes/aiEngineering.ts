@@ -1,8 +1,20 @@
-import { Router, Request, Response } from 'express'
+import { Router, Request, Response, NextFunction } from 'express'
 import { HumanMessage } from '@langchain/core/messages'
-import { validateSecretKey, requireAIEngineeringAuth } from '../middleware/secretKey'
+import { getSharedDeps } from '../shared'
+import aiEngineeringAuthRoutes from './aiEngineeringAuth'
+import aiEngineeringEventsRoutes from './aiEngineeringEvents'
 import { compileGraph, agentGraph } from '../agents/graph'
 import type { CategorizedEvents, FilteredEvent } from '../agents/state'
+import { getUserPreferences, formatPreferencesForPrompt, recordSearchCity } from '../memory/preferences'
+import { retrieveSimilarEpisodes, formatEpisodesForPrompt } from '../memory/episodes'
+
+function authMiddleware(req: Request, res: Response, next: NextFunction) {
+  return getSharedDeps().authenticateToken(req, res, next)
+}
+
+function appAccessMiddleware(req: Request, res: Response, next: NextFunction) {
+  return getSharedDeps().requireAppAccess('ai-engineering')(req, res, next)
+}
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let compiledGraph: any = null
@@ -52,11 +64,10 @@ interface ChatResponse {
   searchDurationMs?: number
 }
 
-router.post('/auth', (req: Request, res: Response) => {
-  validateSecretKey(req, res)
-})
+router.use('/auth', aiEngineeringAuthRoutes)
+router.use('/events', authMiddleware, appAccessMiddleware, aiEngineeringEventsRoutes)
 
-router.post('/chat', requireAIEngineeringAuth, async (req: Request, res: Response) => {
+router.post('/chat', authMiddleware, appAccessMiddleware, async (req: Request, res: Response) => {
   const startTime = Date.now()
   const { message, threadId } = req.body as ChatRequest
 
@@ -68,16 +79,39 @@ router.post('/chat', requireAIEngineeringAuth, async (req: Request, res: Respons
   const currentThreadId = threadId ?? crypto.randomUUID()
 
   try {
+    const userId = req.user?.id ?? null
+    let preferenceContext: string | null = null
+    let episodicContext: string | null = null
+
+    if (userId) {
+      const [prefs, episodes] = await Promise.all([
+        getUserPreferences(userId),
+        retrieveSimilarEpisodes(userId, message),
+      ])
+      preferenceContext = formatPreferencesForPrompt(prefs)
+      episodicContext = formatEpisodesForPrompt(episodes)
+    }
+
     const graph = await getGraph()
     const result = await graph.invoke(
       {
         messages: [new HumanMessage(message)],
         userQuery: message,
+        userId,
+        preferenceContext,
+        episodicContext,
       },
       {
         configurable: { thread_id: currentThreadId },
       }
     )
+
+    const searchedCity = result.userFilters?.city
+    if (userId && searchedCity && searchedCity !== 'Unknown City') {
+      recordSearchCity(userId, searchedCity).catch(err =>
+        console.error('Background recordSearchCity failed:', err)
+      )
+    }
 
     const lastMessage = result.messages[result.messages.length - 1]
     const responseText = typeof lastMessage?.content === 'string'
@@ -126,7 +160,7 @@ router.post('/chat', requireAIEngineeringAuth, async (req: Request, res: Respons
   }
 })
 
-router.get('/eval/results', requireAIEngineeringAuth, async (_req: Request, res: Response) => {
+router.get('/eval/results', authMiddleware, appAccessMiddleware, async (_req: Request, res: Response) => {
   const publicKey = process.env['LANGFUSE_PUBLIC_KEY']
   const secretKey = process.env['LANGFUSE_SECRET_KEY']
   const baseUrl = process.env['LANGFUSE_BASE_URL'] || 'https://us.cloud.langfuse.com'
@@ -138,6 +172,7 @@ router.get('/eval/results', requireAIEngineeringAuth, async (_req: Request, res:
 
   const authHeader = 'Basic ' + Buffer.from(`${publicKey}:${secretKey}`).toString('base64')
   const ragasMetrics = ['faithfulness', 'answer_relevancy', 'context_precision', 'context_recall']
+  const agentMetrics = ['tool_call_accuracy', 'agent_goal_accuracy', 'topic_adherence']
 
   try {
     const allScores: LangfuseScore[] = []
@@ -164,6 +199,7 @@ router.get('/eval/results', requireAIEngineeringAuth, async (_req: Request, res:
     }
 
     const ragasScores = allScores.filter(s => ragasMetrics.includes(s.name))
+    const agentScores = allScores.filter(s => agentMetrics.includes(s.name))
 
     const traceMap = new Map<string, TraceDetail>()
     let tracePage = 1
@@ -282,14 +318,85 @@ router.get('/eval/results', requireAIEngineeringAuth, async (_req: Request, res:
       }
     })
 
-    res.json({ runs })
+    let agentEval = null
+    if (agentScores.length > 0) {
+      const agentTraceIds = new Set(agentScores.map(s => s.traceId))
+      const agentTraces = [...traceMap.values()].filter(t => agentTraceIds.has(t.id))
+
+      const metricAgg: Record<string, number[]> = {}
+      for (const name of agentMetrics) metricAgg[name] = []
+
+      for (const score of agentScores) {
+        if (typeof score.value === 'number' && metricAgg[score.name]) {
+          metricAgg[score.name]!.push(score.value)
+        }
+      }
+
+      const metrics = agentMetrics.map(name => {
+        const values = metricAgg[name] ?? []
+        if (values.length === 0) return { name, mean: 0, min: 0, max: 0, count: 0 }
+        const mean = values.reduce((a, b) => a + b, 0) / values.length
+        return {
+          name,
+          mean: parseFloat(mean.toFixed(4)),
+          min: parseFloat(Math.min(...values).toFixed(4)),
+          max: parseFloat(Math.max(...values).toFixed(4)),
+          count: values.length,
+        }
+      })
+
+      const scoresByTrace: Record<string, { scores: Record<string, number>; comments: Record<string, string> }> = {}
+      for (const score of agentScores) {
+        if (!scoresByTrace[score.traceId]) {
+          scoresByTrace[score.traceId] = { scores: {}, comments: {} }
+        }
+        scoresByTrace[score.traceId]!.scores[score.name] = score.value
+        if (score.comment) {
+          scoresByTrace[score.traceId]!.comments[score.name] = score.comment
+        }
+      }
+
+      const items = agentTraces.map(trace => {
+        const input = (trace.input ?? {}) as Record<string, unknown>
+        const output = (trace.output ?? {}) as Record<string, unknown>
+        const traceScores = scoresByTrace[trace.id]
+        const decision = (output['supervisorDecision'] ?? {}) as Record<string, unknown>
+
+        return {
+          userMessage: (input['userMessage'] as string) || 'Unknown message',
+          expectedRouting: ((input as Record<string, unknown>)['expectedRouting'] as string) || '',
+          actualRouting: (output['actualRouting'] as string) || '',
+          city: (decision['city'] as string) || null,
+          searchQueries: (decision['searchQueries'] as string[]) || [],
+          scores: traceScores?.scores ?? {},
+          comments: traceScores?.comments ?? {},
+        }
+      })
+
+      const latestTrace = agentTraces.length > 0
+        ? agentTraces.reduce((a, b) => (a.createdAt > b.createdAt ? a : b))
+        : null
+
+      agentEval = {
+        experiment: {
+          name: 'Agent Eval - Supervisor Behavior',
+          model: 'claude-sonnet-4-20250514',
+          testCases: agentTraces.length,
+          runTimestamp: latestTrace?.createdAt ?? null,
+        },
+        metrics,
+        items,
+      }
+    }
+
+    res.json({ runs, agentEval })
   } catch (error) {
     console.error('Eval results fetch error:', error)
     res.status(500).json({ error: 'Failed to fetch evaluation results' })
   }
 })
 
-router.get('/eval/dataset', requireAIEngineeringAuth, async (_req: Request, res: Response) => {
+router.get('/eval/dataset', authMiddleware, appAccessMiddleware, async (_req: Request, res: Response) => {
   try {
     const { goldenDataset } = await import('../eval/goldenDataset')
     const items = (goldenDataset as unknown as Array<{

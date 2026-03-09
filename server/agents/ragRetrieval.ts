@@ -1,6 +1,7 @@
 import { AIMessage } from '@langchain/core/messages'
 import { GraphState, type GraphStateType, type RetrievedContext } from './state'
 import { retrieve } from '../rag/retrievers/index'
+import { rerankHeuristics } from '../rag/reranker'
 
 function getActiveCategories(state: GraphStateType): string[] {
   const filters = state.userFilters
@@ -55,14 +56,16 @@ export async function ragRetrievalNode(
   const categories = getActiveCategories(state)
 
   try {
-    const heuristics = await retrieve(
+    const rawHeuristics = await retrieve(
       query,
-      8,
+      12,
       categories.length > 0 ? categories : undefined
     )
 
+    const reranked = await rerankHeuristics(query, rawHeuristics)
+
     const context: RetrievedContext = {
-      heuristics: heuristics.map(h => ({
+      heuristics: reranked.map(h => ({
         category: h.category,
         title: h.title,
         content: h.content,
@@ -73,7 +76,11 @@ export async function ragRetrievalNode(
 
     return {
       retrievedContext: context,
-      messages: [new AIMessage(`Retrieved ${heuristics.length} relevant filtering heuristics.`)],
+      messages: [
+        new AIMessage(
+          `Retrieved ${rawHeuristics.length} heuristics, reranked to ${reranked.length} relevant ones.`
+        ),
+      ],
     }
   } catch (error) {
     console.error('RAG retrieval error:', error)

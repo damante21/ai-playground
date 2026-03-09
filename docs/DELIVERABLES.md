@@ -62,8 +62,8 @@ For newcomers, the problem is worse because they lack local context about venues
 | 4 | "I just moved to Austin. Find safe beginner social events." | Returns newcomer-appropriate categories with clear rationale and risk-aware filtering. |
 | 5 | "Give me learning-focused events under free only." | Prioritizes Learning category, enforces free constraint. |
 | 6 | "These look too broad. Show stricter matches only." | Applies tighter filtering threshold and returns fewer, higher-confidence events. |
-| 7 | "Save these preferences for next time." | *(Planned enhancement)* Would persist preference profile to cross-thread memory namespace via PostgresStore. |
-| 8 | "Use my saved preferences and search Seattle." | *(Planned enhancement)* Would load saved preferences from store and run query with city changed. |
+| 7 | "Show me only the free ones." | Conversational refinement: supervisor detects follow-up intent, re-filters previous results without re-running the full search pipeline. |
+| 8 | "Any of those in the evening?" | Refinement continues narrowing: filter evaluates time-based criteria against the already-filtered event set. |
 | 9 | "Why did this event pass the filter?" | Provides one-line grounded explanation tied to retrieved context. |
 | 10 | "Compare this to raw Eventbrite results." | Shows filtered set quality vs broad source listings (manually in demo/workflow). |
 
@@ -75,7 +75,7 @@ For newcomers, the problem is worse because they lack local context about venues
 
 AI Powered Event Sourcer is an agentic event discovery application that accepts a city plus values-based constraints (for example: free, alcohol-free, secular, apolitical, family-friendly). The UX is a focused search interface that returns categorized event recommendations in 30-60 seconds, where each event includes source, date/time, confidence score, and a brief explanation of why it matches user criteria. The system is designed to feel like a trusted local researcher that pre-vets options instead of forcing users to manually inspect many low-signal listings.
 
-The backend uses a supervisor-researcher pattern: a supervisor agent decomposes the request into parallel research tasks, researcher agents gather candidate events via Tavily, a filter agent applies values-based reasoning with RAG context, and a categorization agent organizes final outputs. The application is implemented in TypeScript using LangGraph.js and LangChain.js, with OpenAI + Anthropic model roles split by cost/reasoning profile. Memory infrastructure (PostgresSaver for in-thread state, PostgresStore for cross-thread preferences) is wired and connected but not yet surfaced as a user-facing feature — each request currently operates statelessly, which is sufficient for the core event discovery use case.
+The backend uses a supervisor-researcher pattern: a supervisor agent decomposes the request into parallel research tasks, researcher agents gather candidate events via Tavily, a filter agent applies values-based reasoning with RAG context, and a categorization agent organizes final outputs. The application is implemented in TypeScript using LangGraph.js and LangChain.js, with OpenAI + Anthropic model roles split by cost/reasoning profile. Retrieval uses an ensemble strategy combining multi-query semantic, BM25 keyword, and naive vector search via weighted reciprocal rank fusion, followed by an LLM-based contextual reranker that scores and drops low-relevance heuristics before they reach the filter agent. Beyond RAG evaluation, an agent-level evaluation pipeline assesses supervisor behavior: Tool Call Accuracy (correct routing), Agent Goal Accuracy (serves user's goal), and Topic Adherence (stays on-domain). The supervisor includes a chain-of-thought "think" step that reasons about query interpretation before acting. Memory is fully implemented: PostgresSaver provides in-thread conversational continuity (the supervisor sees the last 10 messages), PostgresStore provides cross-thread memory for user preferences and episodic recall (past saved events are used as few-shot examples). Conversational refinement allows follow-up queries like "show me only the free ones" to re-filter existing results without re-running the full search pipeline.
 
 ### 2.2 Infrastructure Diagram + Tooling Rationale (7 pts)
 
@@ -120,30 +120,42 @@ flowchart TB
         end
 
         subgraph RAG["RAG Retrieval Layer"]
-            Registry["Retriever Registry<br/>(naive │ bm25 │ multiQuery │ hybrid)"]
+            Registry["Retriever Registry<br/>(naive │ bm25 │ multiQuery │ hybrid │ ensemble)"]
             Naive["Naive<br/>pgvector cosine similarity"]
             BM25["BM25<br/>tsvector full-text search"]
             MultiQ["Multi-Query<br/>LLM query expansion + naive"]
             Hybrid["Hybrid<br/>RRF fusion (naive + BM25)"]
+            Ensemble["Ensemble (default)<br/>weighted RRF (multiQuery + BM25 + naive)"]
+            Reranker["Contextual Reranker<br/>LLM relevance scoring + compression"]
 
             Registry --> Naive
             Registry --> BM25
             Registry --> MultiQ
             Registry --> Hybrid
+            Registry --> Ensemble
+            Ensemble --> MultiQ
+            Ensemble --> BM25
+            Ensemble --> Naive
+            RAGNode --> Reranker
         end
 
-        subgraph MEMORY["Memory Layer (infrastructure wired)"]
-            Checkpointer["PostgresSaver<br/>(in-thread — connected,<br/>enhancement pending)"]
-            Store["PostgresStore<br/>(cross-thread — connected,<br/>enhancement pending)"]
+        subgraph MEMORY["Memory Layer"]
+            Checkpointer["PostgresSaver<br/>(in-thread conversation continuity)"]
+            Store["PostgresStore<br/>(cross-thread preferences + episodes)"]
         end
 
         subgraph EVAL["Evaluation Pipeline"]
-            GoldenSet["Golden Dataset<br/>(15 test cases)"]
+            GoldenSet["RAG Golden Dataset<br/>(15 test cases)"]
             Evaluators["RAGAS Evaluators<br/>Claude Sonnet 4 (judge)"]
             RunEval["runEval.ts CLI<br/>(per-retriever experiments)"]
+            AgentGolden["Agent Golden Dataset<br/>(12 test cases)"]
+            AgentEvals["Agent Evaluators<br/>(tool call, goal, topic)"]
+            RunAgent["runAgentEval.ts CLI"]
 
             GoldenSet --> RunEval
             RunEval --> Evaluators
+            AgentGolden --> RunAgent
+            RunAgent --> AgentEvals
         end
 
         subgraph DB["PostgreSQL + pgvector"]
@@ -219,7 +231,8 @@ flowchart TB
 
 - Curated values-based filtering heuristics dataset: 65 entries across 6 categories (alcohol, religion, politics, cost, family-friendliness, general) stored in `filtering_heuristics` table.
 - Ingestion pipeline creates OpenAI `text-embedding-3-small` embeddings and stores vectors + metadata in PostgreSQL with pgvector.
-- Retrieval layer includes naive (pgvector cosine similarity), BM25 (PostgreSQL tsvector full-text search), multi-query (LLM query reformulation + naive), and hybrid (RRF fusion of naive + BM25) strategies with shared interface and evaluation comparison.
+- Retrieval layer includes naive (pgvector cosine similarity), BM25 (PostgreSQL tsvector full-text search), multi-query (LLM query reformulation + naive), hybrid (RRF fusion of naive + BM25), and ensemble (weighted RRF of multi-query + BM25 + naive) strategies with shared interface and evaluation comparison.
+- Contextual reranker (GPT-4o-mini) scores each retrieved heuristic against the query and drops low-relevance chunks before they reach the filter agent, reducing noise in the context window.
 
 #### Agent Components
 
@@ -278,7 +291,7 @@ At query time, the supervisor creates parallel research tasks and researcher age
   - [x] RAG context retrieval
   - [x] Multi-agent orchestration
   - [x] Categorized output
-  - [x] Memory infrastructure wired (PostgresSaver + PostgresStore connected; user-facing memory is a planned enhancement)
+  - [x] Memory fully implemented: PostgresSaver (in-thread conversation history), PostgresStore (cross-thread preferences + episodic memory), conversational refinement
 
 ### 4.2 Demo Evidence
 
@@ -348,12 +361,16 @@ The baseline naive retriever produces strong answer relevancy (1.0) and reasonab
   - [x] bm25 — PostgreSQL tsvector full-text search with `ts_rank` scoring (`server/rag/retrievers/bm25.ts`)
   - [x] multi-query — LLM-generated query reformulations with naive retrieval + deduplication (`server/rag/retrievers/multiQuery.ts`)
   - [x] hybrid — Reciprocal Rank Fusion of naive + BM25 results (`server/rag/retrievers/hybrid.ts`)
-- Final selected production retriever: `multiQuery` — highest faithfulness (1.0) and tied-best context recall (0.833)
+  - [x] ensemble — weighted Reciprocal Rank Fusion of multi-query + BM25 + naive (`server/rag/retrievers/ensemble.ts`)
+- Contextual reranker: LLM-based relevance scoring (GPT-4o-mini) drops low-relevance heuristics after retrieval (`server/rag/reranker.ts`)
+- Final selected production retriever: `ensemble` — combines all three signal types (multi-query semantic, BM25 keyword, naive vector) via weighted RRF, followed by contextual reranking
 - Code locations:
   - `server/rag/retrievers/naive.ts`
   - `server/rag/retrievers/bm25.ts`
   - `server/rag/retrievers/multiQuery.ts`
   - `server/rag/retrievers/hybrid.ts`
+  - `server/rag/retrievers/ensemble.ts`
+  - `server/rag/reranker.ts`
   - `server/rag/retrievers/index.ts` (strategy-pattern registry with `setActiveRetriever`)
 
 ### 6.3 Comparison Results (2 pts)
@@ -384,11 +401,11 @@ Multi-Query retrieval achieves the highest overall performance: perfect faithful
 
 ### Dense Vector Retrieval for Demo Day: Keep or Change?
 
-Change from naive dense vector retrieval to Multi-Query retrieval as the default production strategy.
+Change from naive dense vector retrieval to ensemble retrieval with contextual reranking as the default production strategy.
 
 ### Why
 
-Multi-Query retrieval achieved perfect faithfulness (1.0 vs 0.993 naive) while maintaining the same context recall (0.833). The LLM query reformulation step adds latency but eliminates the primary failure mode of pure dense retrieval: missing relevant heuristics when the user's natural language doesn't align with embedding space proximity. For a values-based filtering application, the cost of a false pass (recommending an event that violates user criteria) is high — making faithfulness the most important metric to optimize. The 0.7% improvement in faithfulness means zero unfaithful decisions across all 15 test cases, compared to one partially unfaithful case with naive retrieval. Context precision (0.567 vs 0.550) is comparable, and the additional LLM call per query is acceptable given the overall pipeline already takes 30-60 seconds for full event discovery.
+Multi-Query retrieval achieved perfect faithfulness (1.0 vs 0.993 naive) while maintaining the same context recall (0.833) in RAGAS evaluation. Building on this, the production pipeline now uses an ensemble retriever that combines multi-query semantic, BM25 keyword, and naive vector search via weighted reciprocal rank fusion — capturing all three signal types in a single pass. After retrieval, an LLM-based contextual reranker scores each heuristic against the specific query and drops low-relevance chunks, reducing noise before it reaches the filter agent. This two-stage approach (broad ensemble retrieval → focused reranking) addresses both failure modes identified in evaluation: missing relevant heuristics (recall) and including irrelevant ones (precision). The additional latency from the reranking LLM call is acceptable given the overall pipeline already takes 30-60 seconds for full event discovery.
 
 ---
 
@@ -408,6 +425,9 @@ npm run eval:bm25
 npm run eval:multiQuery
 npm run eval:hybrid
 
+# Run agent-level evaluation
+npm run eval:agent
+
 # View eval dashboard
 # Navigate to http://localhost:3000/ai-engineering/eval
 ```
@@ -423,9 +443,12 @@ npm run eval:hybrid
 
 ### C) Evidence Artifacts
 
-- Evaluator source code: `server/eval/ragasEvaluators.ts`
-- Golden dataset source: `server/eval/goldenDataset.ts` (15 test cases)
-- Eval runner source: `server/eval/runEval.ts`
+- RAG evaluator source code: `server/eval/ragasEvaluators.ts`
+- RAG golden dataset source: `server/eval/goldenDataset.ts` (15 test cases)
+- RAG eval runner source: `server/eval/runEval.ts`
+- Agent evaluator source code: `server/eval/agentEvaluators.ts` (tool call accuracy, agent goal accuracy, topic adherence)
+- Agent golden dataset source: `server/eval/agentGoldenDataset.ts` (12 test cases)
+- Agent eval runner source: `server/eval/runAgentEval.ts`
 - Raw experiment data: `data/langfuse-traces-all-experiments.csv` (78 traces, 5 experiments)
 - Raw score data: `data/langfuse-eval-metrics.csv` (306 scores)
 

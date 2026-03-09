@@ -1,13 +1,21 @@
 import { useState, useEffect } from 'react'
-import { isAuthenticated } from '../lib/api'
-import SecretKeyGate from '../components/SecretKeyGate'
+import { isAuthenticated, verifyAuth } from '../lib/api'
+import AuthGate from '../components/AuthGate'
 import ChatInterface from '../components/ChatInterface'
 
 export default function AIEngineeringPage() {
   const [authed, setAuthed] = useState(false)
+  const [checking, setChecking] = useState(true)
 
   useEffect(() => {
-    setAuthed(isAuthenticated())
+    if (isAuthenticated()) {
+      verifyAuth().then(valid => {
+        setAuthed(valid)
+        setChecking(false)
+      })
+    } else {
+      setChecking(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -19,8 +27,16 @@ export default function AIEngineeringPage() {
     }
   }, [])
 
+  if (checking) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-950">
+        <div className="text-gray-400 text-sm">Loading...</div>
+      </div>
+    )
+  }
+
   if (!authed) {
-    return <SecretKeyGate onAuthenticated={() => setAuthed(true)} />
+    return <AuthGate onAuthenticated={() => setAuthed(true)} />
   }
 
   return <ChatInterface onLogout={() => setAuthed(false)} />

@@ -43,6 +43,18 @@ export interface RetrievedContext {
 
 export const GraphState = Annotation.Root({
   ...MessagesAnnotation.spec,
+  userId: Annotation<string | null>({
+    reducer: (_current, update) => update,
+    default: () => null,
+  }),
+  preferenceContext: Annotation<string | null>({
+    reducer: (_current, update) => update,
+    default: () => null,
+  }),
+  episodicContext: Annotation<string | null>({
+    reducer: (_current, update) => update,
+    default: () => null,
+  }),
   userQuery: Annotation<string>({
     reducer: (_current, update) => update,
     default: () => '',
@@ -56,7 +68,7 @@ export const GraphState = Annotation.Root({
     default: () => [],
   }),
   rawEvents: Annotation<RawEvent[]>({
-    reducer: (current, update) => [...current, ...update],
+    reducer: (_current, update) => update,
     default: () => [],
   }),
   filteredEvents: Annotation<FilteredEvent[]>({
@@ -75,7 +87,11 @@ export const GraphState = Annotation.Root({
     reducer: (_current, update) => update,
     default: () => null,
   }),
-  status: Annotation<'planning' | 'researching' | 'filtering' | 'categorizing' | 'complete' | 'error'>({
+  refinementCriteria: Annotation<string | null>({
+    reducer: (_current, update) => update,
+    default: () => null,
+  }),
+  status: Annotation<'planning' | 'researching' | 'refining' | 'filtering' | 'categorizing' | 'complete' | 'error'>({
     reducer: (_current, update) => update,
     default: () => 'planning' as const,
   }),

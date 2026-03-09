@@ -1,39 +1,93 @@
 import { useState } from 'react'
 import type { ChatMessage as ChatMessageType } from '../hooks/useChat'
 import type { EventData } from '../lib/api'
+import { saveEvent } from '../lib/api'
 
 interface ChatMessageProps {
   message: ChatMessageType
+  threadId?: string
+  userQuery?: string
 }
 
-function EventCard({ event }: { event: EventData }) {
+function EventCard({ event, threadId, userQuery }: { event: EventData; threadId?: string; userQuery?: string }) {
+  const [saved, setSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+
   const confidenceColor = event.confidenceScore >= 0.9
     ? 'text-green-400'
     : event.confidenceScore >= 0.7
       ? 'text-yellow-400'
       : 'text-orange-400'
 
+  async function handleSave(e: React.MouseEvent) {
+    e.preventDefault()
+    e.stopPropagation()
+    if (saved || saving) return
+
+    setSaving(true)
+    const result = await saveEvent({
+      title: event.title,
+      description: event.description,
+      eventUrl: event.url,
+      venueName: event.venue,
+      startTime: event.date,
+      category: event.city,
+      confidenceScore: event.confidenceScore,
+      matchExplanation: event.matchExplanation,
+      sourceThreadId: threadId,
+      sourceQuery: userQuery,
+    })
+    setSaving(false)
+
+    if (result.success) {
+      setSaved(true)
+    }
+  }
+
   return (
-    <a
-      href={event.url}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="block bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
-    >
-      <div className="flex items-start justify-between gap-2 mb-2">
-        <h4 className="text-white font-medium text-sm leading-tight">{event.title}</h4>
-        <span className={`text-xs font-mono ${confidenceColor} shrink-0`}>
-          {Math.round(event.confidenceScore * 100)}%
-        </span>
-      </div>
-      <p className="text-gray-400 text-xs mb-2 line-clamp-2">{event.description}</p>
-      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
-        <span>{event.date}{event.time ? ` · ${event.time}` : ''}</span>
-        {event.venue && <span>{event.venue}</span>}
-        <span>{event.source}</span>
-      </div>
-      <p className="mt-2 text-xs text-blue-400/80 italic">{event.matchExplanation}</p>
-    </a>
+    <div className="relative group">
+      <a
+        href={event.url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="block bg-gray-800/50 border border-gray-700 rounded-lg p-4 hover:border-gray-600 transition-colors"
+      >
+        <div className="flex items-start gap-2 mb-2 pr-8">
+          <span className={`text-xs font-mono ${confidenceColor} shrink-0 mt-0.5`}>
+            {Math.round(event.confidenceScore * 100)}%
+          </span>
+          <h4 className="text-white font-medium text-sm leading-tight">{event.title}</h4>
+        </div>
+        <p className="text-gray-400 text-xs mb-2 line-clamp-2">{event.description}</p>
+        <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+          <span>{event.date}{event.time ? ` · ${event.time}` : ''}</span>
+          {event.venue && <span>{event.venue}</span>}
+          <span>{event.source}</span>
+        </div>
+        <p className="mt-2 text-xs text-blue-400/80 italic">{event.matchExplanation}</p>
+      </a>
+      <button
+        onClick={handleSave}
+        disabled={saved || saving}
+        title={saved ? 'Saved' : 'Save event'}
+        className={`absolute top-3 right-3 p-1.5 rounded-md transition-all ${
+          saved
+            ? 'text-blue-400 cursor-default'
+            : 'text-gray-500 hover:text-white hover:bg-gray-700 opacity-0 group-hover:opacity-100'
+        }`}
+      >
+        {saving ? (
+          <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" viewBox="0 0 24 24" fill={saved ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z" />
+          </svg>
+        )}
+      </button>
+    </div>
   )
 }
 
@@ -51,7 +105,7 @@ function RejectedEventRow({ event }: { event: EventData }) {
   )
 }
 
-export default function ChatMessage({ message }: ChatMessageProps) {
+export default function ChatMessage({ message, threadId, userQuery }: ChatMessageProps) {
   const isUser = message.role === 'user'
   const [showRejected, setShowRejected] = useState(false)
   const rejectedCount = message.rejectedEvents?.length ?? 0
@@ -78,7 +132,7 @@ export default function ChatMessage({ message }: ChatMessageProps) {
                 </h3>
                 <div className="space-y-2">
                   {events.map((event, i) => (
-                    <EventCard key={`${event.title}-${i}`} event={event} />
+                    <EventCard key={`${event.title}-${i}`} event={event} threadId={threadId} userQuery={userQuery} />
                   ))}
                 </div>
               </div>

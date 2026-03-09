@@ -10,6 +10,7 @@ import { getStore } from '../memory/store'
 
 function routeAfterSupervisor(state: GraphStateType): string {
   if (state.status === 'complete') return END
+  if (state.status === 'refining') return 'filter'
   if (state.status === 'researching') return 'researchers'
   return END
 }
@@ -31,6 +32,7 @@ const workflow = new StateGraph(GraphState)
   .addConditionalEdges('supervisor', routeAfterSupervisor, {
     [END]: END,
     researchers: 'researchers',
+    filter: 'filter',
   })
   .addConditionalEdges('researchers', routeAfterResearchers, {
     supervisor: 'supervisor',

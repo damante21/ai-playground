@@ -19,18 +19,35 @@ This project is built for an AI engineering certification challenge and focuses 
 - Values-based event search by city
 - Multi-agent workflow (supervisor, researchers, filter, categorizer)
 - RAG context from curated filtering heuristics knowledge base (65 entries, 6 categories)
-- Multiple retrieval strategies (naive, BM25, multi-query, hybrid)
-- Memory infrastructure wired (PostgresSaver + PostgresStore) — see [Future Enhancements](#future-enhancements)
+- Multiple retrieval strategies (naive, BM25, multi-query, hybrid, **ensemble**)
+- **Ensemble retrieval** (default) — combines multi-query semantic, BM25 keyword, and naive vector search via weighted reciprocal rank fusion for best-of-all-worlds retrieval quality
+- **Contextual reranking** — LLM-based reranker scores each retrieved heuristic against the query and drops low-relevance chunks, reducing noise in the filter agent's context window
+- **Conversational refinement** — follow-up queries like "show me only the free ones" re-filter existing results without re-running the full search pipeline
+- **Episodic memory** — the system learns from events users save and uses past successes as few-shot examples to improve future recommendations
+- **Think tool** — the supervisor reasons step-by-step about query interpretation and search strategy before acting, improving routing quality for ambiguous queries
+- **In-thread memory** via PostgresSaver checkpointer with conversation history in the supervisor prompt
+- **Cross-thread memory** via PostgresStore for user preferences and episodic recall
+- User authentication with application-scoped access (signup with secret key gate)
+- My Events page with event saving, status management, .ics calendar export, and pre-event briefings
+- **Agent evaluation pipeline** — Tool Call Accuracy, Agent Goal Accuracy, and Topic Adherence evaluators assess supervisor routing and decision quality across 12 test scenarios
 - Tracing/observability and evaluation instrumentation
 
 ## High-Level Architecture
 
+**New search flow:**
 1. User submits city + filter preferences
 2. Supervisor decomposes search into parallel research tasks
 3. Researcher agents gather event candidates from web sources
 4. Filter agent applies criteria using both raw results + retrieved context
 5. Categorizer groups accepted events for final output
 6. API returns structured, explainable recommendations
+
+**Refinement flow (follow-up queries):**
+1. User sends a follow-up like "show me only the outdoor ones"
+2. Supervisor detects refinement intent and extracts criteria
+3. Filter agent re-evaluates the previous results against the new criteria (skipping researchers and RAG)
+4. Categorizer re-groups the narrowed results
+5. API returns the refined subset
 
 ## Tech Stack
 
@@ -80,24 +97,36 @@ For detailed setup instructions, see `docs/AI_ENGINEERING_LOCAL_SETUP.md`.
 - **Demo URL (public):** `https://jamesdamante.com/ai-engineering`
 - **Written Deliverables:** `docs/DELIVERABLES.md`
 
-## Future Enhancements
+## Memory Architecture
 
 ### In-Thread Memory (Conversation Continuity)
+PostgresSaver checkpointer persists full graph state per `threadId`. The supervisor includes the last 10 messages as conversation history. This enables multi-turn interactions: initial searches, conversational refinement, and follow-up questions all within a single thread.
 
-The infrastructure for in-thread memory is fully wired: `PostgresSaver` connects to the database, the frontend tracks `threadId` across messages, and the graph compiles with the checkpointer. The remaining step is to pass `state.messages` (the full conversation history from the checkpoint) into the supervisor's LLM call instead of only the current `userQuery`. This change is in `server/agents/supervisor.ts` lines 75-90 — include `state.messages` in the model invocation array so the LLM sees prior turns.
+### Cross-Thread Memory (Preferences + Episodes)
+PostgresStore provides two namespaces per user:
+- **Preferences** — tracks favorite categories, frequent filters, saved event count, and last searched city
+- **Episodes** — stores successful interactions (query, city, saved event details). On new searches, the 3 most semantically similar episodes are retrieved and injected as few-shot examples into both the supervisor and filter prompts.
 
-### Cross-Thread Memory (Saved Preferences)
+### Conversational Refinement
+When the supervisor detects a refinement intent (e.g., "show me only the free ones"), it routes directly to the filter node, skipping researchers and RAG retrieval. The filter re-evaluates the previous `filteredEvents` against the new criteria, then the categorizer re-groups the narrowed results.
 
-`PostgresStore` is connected and the store tables are auto-created. To implement saved preferences:
+## Running Evaluations
 
-1. Add a `/api/ai-engineering/preferences` endpoint that reads/writes to the store using a user namespace
-2. In the supervisor node, load saved preferences from the store at the start of each invocation
-3. Merge saved preferences with the current query's filters
-4. Add UI controls to save/load preference profiles
+All eval scripts run inside Docker (requires Node 18+). With the container running:
 
-### Implementation Priority
+```bash
+# RAG retrieval evaluation (per-retriever)
+docker compose exec server npm run eval:naive
+docker compose exec server npm run eval:bm25
+docker compose exec server npm run eval:multiquery
+docker compose exec server npm run eval:hybrid
+docker compose exec server npm run eval:all       # runs all four sequentially
 
-Both features are additive — the current stateless-per-request behavior is correct and complete for the core use case. Memory would improve UX for repeat users but is not required for the event discovery pipeline.
+# Agent behavior evaluation (supervisor routing, goal accuracy, topic adherence)
+docker compose exec server npm run eval:agent
+```
+
+Results are reported to Langfuse and printed to the console.
 
 ## Development Notes
 

@@ -1,47 +1,105 @@
 const API_BASE = '/api/ai-engineering'
+const AUTH_STORAGE_KEY = 'ai-engineering-auth'
 
-function getStoredToken(): string | null {
+export interface AuthUser {
+  id: string
+  username: string
+  email: string
+}
+
+interface StoredAuth {
+  token: string
+  user: AuthUser
+}
+
+function getStoredAuth(): StoredAuth | null {
   try {
-    const data = localStorage.getItem('ai-engineering-auth')
+    const data = localStorage.getItem(AUTH_STORAGE_KEY)
     if (!data) return null
-    const parsed = JSON.parse(data) as { token: string; expiresAt: string }
-    if (new Date(parsed.expiresAt) < new Date()) {
-      localStorage.removeItem('ai-engineering-auth')
-      return null
-    }
-    return parsed.token
+    return JSON.parse(data) as StoredAuth
   } catch {
     return null
   }
 }
 
-function storeToken(token: string, expiresAt: string): void {
-  localStorage.setItem('ai-engineering-auth', JSON.stringify({ token, expiresAt }))
+function getStoredToken(): string | null {
+  return getStoredAuth()?.token ?? null
+}
+
+function storeAuth(token: string, user: AuthUser): void {
+  localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify({ token, user }))
 }
 
 export function clearAuth(): void {
-  localStorage.removeItem('ai-engineering-auth')
+  localStorage.removeItem(AUTH_STORAGE_KEY)
 }
 
 export function isAuthenticated(): boolean {
   return getStoredToken() !== null
 }
 
-export async function authenticate(secretKey: string): Promise<{ success: boolean; error?: string }> {
-  const res = await fetch(`${API_BASE}/auth`, {
+export function getUser(): AuthUser | null {
+  return getStoredAuth()?.user ?? null
+}
+
+export async function login(
+  emailOrUsername: string,
+  password: string
+): Promise<{ success: boolean; user?: AuthUser; error?: string }> {
+  const res = await fetch(`${API_BASE}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ secretKey }),
+    body: JSON.stringify({ emailOrUsername, password }),
   })
 
   if (!res.ok) {
-    const data = await res.json().catch(() => ({ error: 'Authentication failed' }))
+    const data = await res.json().catch(() => ({ error: 'Login failed' }))
     return { success: false, error: (data as { error: string }).error }
   }
 
-  const data = await res.json() as { token: string; expiresAt: string }
-  storeToken(data.token, data.expiresAt)
+  const data = await res.json() as { token: string; user: AuthUser }
+  storeAuth(data.token, data.user)
+  return { success: true, user: data.user }
+}
+
+export async function signup(
+  username: string,
+  email: string,
+  password: string,
+  secretKey: string
+): Promise<{ success: boolean; error?: string }> {
+  const res = await fetch(`${API_BASE}/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, email, password, secretKey }),
+  })
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Signup failed' }))
+    const errorData = data as { error: string; details?: Array<{ msg: string }> }
+    const message = errorData.details?.[0]?.msg ?? errorData.error
+    return { success: false, error: message }
+  }
+
   return { success: true }
+}
+
+export async function verifyAuth(): Promise<boolean> {
+  const token = getStoredToken()
+  if (!token) return false
+
+  try {
+    const res = await fetch(`${API_BASE}/auth/verify`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) {
+      clearAuth()
+      return false
+    }
+    return true
+  } catch {
+    return false
+  }
 }
 
 export interface EventData {
@@ -97,8 +155,32 @@ export interface EvalRun {
   items: EvalItem[]
 }
 
+export interface AgentEvalExperiment {
+  name: string
+  model: string
+  testCases: number
+  runTimestamp: string | null
+}
+
+export interface AgentEvalItem {
+  userMessage: string
+  expectedRouting: string
+  actualRouting: string
+  city: string | null
+  searchQueries: string[]
+  scores: Record<string, number>
+  comments: Record<string, string>
+}
+
+export interface AgentEvalData {
+  experiment: AgentEvalExperiment
+  metrics: EvalMetric[]
+  items: AgentEvalItem[]
+}
+
 export interface EvalResultsResponse {
   runs: EvalRun[]
+  agentEval: AgentEvalData | null
 }
 
 export interface DatasetItem {
@@ -195,4 +277,162 @@ export async function sendChatMessage(
 
   const data = await res.json() as ChatResponseData
   return { success: true, data }
+}
+
+// --- Saved Events API ---
+
+export type SavedEventStatus = 'interested' | 'going' | 'attended' | 'skipped'
+
+export interface SavedEvent {
+  id: string
+  title: string
+  description: string | null
+  event_url: string | null
+  venue_name: string | null
+  venue_address: string | null
+  start_time: string | null
+  end_time: string | null
+  category: string | null
+  is_free: boolean | null
+  confidence_score: number | null
+  match_explanation: string | null
+  status: SavedEventStatus
+  notes: string | null
+  enriched_at: string | null
+  enrichment_data: Record<string, unknown> | null
+  source_thread_id: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SaveEventInput {
+  title: string
+  description?: string
+  eventUrl?: string
+  venueName?: string
+  venueAddress?: string
+  startTime?: string
+  endTime?: string
+  category?: string
+  isFree?: boolean
+  confidenceScore?: number
+  matchExplanation?: string
+  sourceThreadId?: string
+  sourceQuery?: string
+}
+
+async function authedFetch(
+  path: string,
+  options: RequestInit = {}
+): Promise<Response | null> {
+  const token = getStoredToken()
+  if (!token) return null
+
+  const headers = new Headers(options.headers)
+  headers.set('Authorization', `Bearer ${token}`)
+  if (options.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json')
+  }
+
+  const res = await fetch(`${API_BASE}${path}`, { ...options, headers })
+  if (res.status === 401 || res.status === 403) {
+    clearAuth()
+    return null
+  }
+  return res
+}
+
+export async function saveEvent(input: SaveEventInput): Promise<{ success: boolean; event?: SavedEvent; error?: string }> {
+  const res = await authedFetch('/events', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  })
+  if (!res) return { success: false, error: 'Not authenticated' }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed to save event' }))
+    return { success: false, error: (data as { error: string }).error }
+  }
+
+  const data = await res.json() as { success: boolean; event: SavedEvent }
+  return { success: true, event: data.event }
+}
+
+export async function fetchSavedEvents(filters?: {
+  status?: SavedEventStatus
+  category?: string
+  upcoming?: boolean
+}): Promise<{ success: boolean; events?: SavedEvent[]; error?: string }> {
+  const params = new URLSearchParams()
+  if (filters?.status) params.set('status', filters.status)
+  if (filters?.category) params.set('category', filters.category)
+  if (filters?.upcoming) params.set('upcoming', 'true')
+
+  const qs = params.toString()
+  const res = await authedFetch(`/events${qs ? `?${qs}` : ''}`)
+  if (!res) return { success: false, error: 'Not authenticated' }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed to fetch events' }))
+    return { success: false, error: (data as { error: string }).error }
+  }
+
+  const data = await res.json() as { success: boolean; events: SavedEvent[] }
+  return { success: true, events: data.events }
+}
+
+export async function updateEvent(
+  eventId: string,
+  updates: { status?: SavedEventStatus; notes?: string }
+): Promise<{ success: boolean; error?: string }> {
+  const res = await authedFetch(`/events/${eventId}`, {
+    method: 'PATCH',
+    body: JSON.stringify(updates),
+  })
+  if (!res) return { success: false, error: 'Not authenticated' }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed to update event' }))
+    return { success: false, error: (data as { error: string }).error }
+  }
+
+  return { success: true }
+}
+
+export async function deleteEvent(eventId: string): Promise<{ success: boolean; error?: string }> {
+  const res = await authedFetch(`/events/${eventId}`, { method: 'DELETE' })
+  if (!res) return { success: false, error: 'Not authenticated' }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed to delete event' }))
+    return { success: false, error: (data as { error: string }).error }
+  }
+
+  return { success: true }
+}
+
+export function getEventIcsUrl(eventId: string): string {
+  return `${API_BASE}/events/${eventId}/ics`
+}
+
+export interface EventBriefing {
+  stillHappening: boolean
+  updatedDetails: string | null
+  weatherNote: string | null
+  whatToExpect: string
+  tips: string[]
+  generatedAt: string
+}
+
+export async function getEventBriefing(eventId: string): Promise<{ success: boolean; briefing?: EventBriefing; error?: string }> {
+  const res = await authedFetch(`/events/${eventId}/briefing`, { method: 'POST' })
+  if (!res) return { success: false, error: 'Not authenticated' }
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({ error: 'Failed to generate briefing' }))
+    return { success: false, error: (data as { error: string }).error }
+  }
+
+  const data = await res.json() as { success: boolean; briefing: EventBriefing }
+  return { success: true, briefing: data.briefing }
 }

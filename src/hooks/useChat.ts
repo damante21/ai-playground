@@ -65,5 +65,5 @@ export function useChat() {
     threadIdRef.current = undefined
   }, [])
 
-  return { messages, isLoading, error, sendMessage, clearMessages }
+  return { messages, isLoading, error, sendMessage, clearMessages, threadId: threadIdRef.current }
 }

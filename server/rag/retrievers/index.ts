@@ -2,8 +2,9 @@ import { naiveRetrieve, type RetrievedHeuristic } from './naive'
 import { bm25Retrieve } from './bm25'
 import { multiQueryRetrieve } from './multiQuery'
 import { hybridRetrieve } from './hybrid'
+import { ensembleRetrieve } from './ensemble'
 
-export type RetrieverType = 'naive' | 'bm25' | 'multiQuery' | 'hybrid'
+export type RetrieverType = 'naive' | 'bm25' | 'multiQuery' | 'hybrid' | 'ensemble'
 
 export type RetrieverFn = (
   query: string,
@@ -16,9 +17,10 @@ const retrievers: Record<RetrieverType, RetrieverFn> = {
   bm25: bm25Retrieve,
   multiQuery: multiQueryRetrieve,
   hybrid: hybridRetrieve,
+  ensemble: ensembleRetrieve,
 }
 
-let activeRetriever: RetrieverType = 'naive'
+let activeRetriever: RetrieverType = 'ensemble'
 
 export function setActiveRetriever(type: RetrieverType): void {
   activeRetriever = type
