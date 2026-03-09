@@ -84,11 +84,27 @@ ai-engineering/
 git clone https://github.com/damante21/ai-playground.git
 cd ai-playground
 cp .env.example .env   # Fill in your API keys
-docker-compose up --build
+docker compose up --build
 # Open http://localhost:3000/ai-engineering
 ```
 
 For detailed setup instructions, see `docs/AI_ENGINEERING_LOCAL_SETUP.md`.
+
+## Authentication
+
+The standalone app supports two auth modes controlled by the `AUTH_DISABLED` environment variable in `.env`:
+
+**`AUTH_DISABLED=true` (default in `.env.example`)** — Auth is bypassed. The app auto-authenticates with a built-in demo user on page load. No login screen, no signup required. Use this for demos and local development.
+
+**`AUTH_DISABLED` unset or `false`** — Full authentication is enabled. Users must create an account (requires the `AI_ENGINEERING_SECRET_KEY`) and log in. The app uses JWT tokens, application-scoped access control, and bcrypt password hashing.
+
+When switching between modes, if you previously ran with auth enabled and have an existing database, you may need to clear your browser's localStorage (`ai-engineering-auth` key) to avoid stale token issues.
+
+### Fresh start (wipes standalone database only)
+
+```bash
+docker compose down -v && docker compose up --build
+```
 
 ## Certification Submission
 
