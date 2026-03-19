@@ -8,7 +8,7 @@ import {
   fetchSavedEvents,
   updateEvent,
   deleteEvent,
-  getEventIcsUrl,
+  downloadEventIcs,
   getEventBriefing,
 } from '../lib/api'
 import type { SavedEvent, SavedEventStatus, EventBriefing } from '../lib/api'
@@ -334,8 +334,8 @@ function EventRow({
               </svg>
             </a>
           )}
-          <a
-            href={getEventIcsUrl(event.id)}
+          <button
+            onClick={() => downloadEventIcs(event.id, event.title)}
             title="Download calendar file"
             className="p-2 text-gray-500 hover:text-white hover:bg-gray-800 rounded-md transition-colors"
           >
@@ -345,7 +345,7 @@ function EventRow({
               <line x1="8" y1="2" x2="8" y2="6" />
               <line x1="3" y1="10" x2="21" y2="10" />
             </svg>
-          </a>
+          </button>
           <div className="relative">
             <button
               onClick={() => setShowActions(!showActions)}

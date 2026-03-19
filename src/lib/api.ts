@@ -431,8 +431,19 @@ export async function deleteEvent(eventId: string): Promise<{ success: boolean; 
   return { success: true }
 }
 
-export function getEventIcsUrl(eventId: string): string {
-  return `${API_BASE}/events/${eventId}/ics`
+export async function downloadEventIcs(eventId: string, eventTitle: string): Promise<void> {
+  const res = await authedFetch(`/events/${eventId}/ics`)
+  if (!res || !res.ok) return
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `${eventTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-')}.ics`
+  document.body.appendChild(a)
+  a.click()
+  document.body.removeChild(a)
+  URL.revokeObjectURL(url)
 }
 
 export interface EventBriefing {
